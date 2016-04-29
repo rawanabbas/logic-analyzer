@@ -1,9 +1,10 @@
+'use strict';
+
 var fs = require('fs-extra');
 var TPS = require('../node_modules/thinplate/thinplate');
 
 var Gate = require('./gate').Gate;
 // var FlipFlop = require('./flipflop').FlipFlop;
-
 
 function clone(obj) {
     // basic type deep copy
@@ -45,14 +46,14 @@ function getMaximum(arr, firstKey, secondKey) {
     return max;
 } //End of getMaximum
 
-
+module.exports.getMaximum = getMaximum;
 module.exports.clone = clone;
 
 module.exports.Liberty = function (filename) {
 
     var _technology;
     var _cells;
-    var _filename = './uploads/osu350';
+    var _filename = process.env.PWD + '/uploads/osu350.json';
 
     if (filename != null) {
         _filename = filename;
@@ -63,6 +64,7 @@ module.exports.Liberty = function (filename) {
     }; //End of _setTechnology
 
     var _setCells = function (cells) {
+        console.log('Inside _setCells()');
         _cells = clone(cells);
     }; //End of _setCells
 
@@ -103,7 +105,7 @@ module.exports.Liberty = function (filename) {
                 cellRise.push(outputs[i]['timing'][inputs[j]["name"]]["cell_rise"]["table"]);
                 cellFall.push(outputs[i]['timing'][inputs[j]["name"]]["cell_fall"]["table"]);
             } //End of for j
-        } //End of i
+        } //End of for i
 
         var xValues = outputs[0]['timing'][inputs[0]["name"]]["cell_rise"]["x_values"];
         var yValues = outputs[0]['timing'][inputs[0]["name"]]["cell_rise"]["y_values"];
@@ -131,15 +133,33 @@ module.exports.Liberty = function (filename) {
         cb(null, cell);
     }; //End of _getGateDelay
 
+    var _getFlipFlopDelay = function (flipflop, inputTransition, outputCapacitance, cb) {
+
+        if (flipflop == null || inputTransition == null || outputCapacitance == null) {
+            cb({error: 'Either the cell JSON, inputTransition or outputCapacitance is not provided.'});
+        } //End of if
+
+
+
+    }; //End of _getFlipFlopDelay
+
     this.parseLibertyFile = function (cb) {
         console.log('Inside parseLibertyFile');
         fs.readJson(_filename, function (err, data) {
             if (err) {
                 console.error("An error has occured while reading the liberty file.");
-                cb(err);
+                if (cb) {
+                    cb(err);
+                }
+                throw Error(err);
             } else {
-                _setCells(data);
-                cb(null, data);
+                console.log('Inside else parseLibertyFile');
+                // _setCells(data);
+                _cells = clone(data['cells']);
+                console.log('After _cells = clone;');
+                if (!cb) {
+                    cb(null, data);
+                } //End of if
             } //End of else
         });//End of readJson
     } //End of parseLibertyFile
@@ -155,33 +175,56 @@ module.exports.Liberty = function (filename) {
     this.getCellByName = function (cellType, inputs, outputs, size, cb) {
         console.log('Inside getCellByName.');
 
+        cb = (cb instanceof Function) ? cb : (size instanceof Function) ? size : (outputs instanceof Function) ? outputs: (inputs instanceof Function) ? inputs :  null;
+
+        if (!cb) {
+            cb = function (err, data) {
+                if (err) {
+                    throw Error(err);
+                } else {
+                    return data;
+                }
+            }
+        }
+
         if (cellType == null) {
             cb({error:"Cell Type is not specified!!"});
         } //End of cellType
 
         var cell = cellType;
         var cellJSON;
-        if (inputs != null) {
+        if (inputs != null && !(inputs instanceof Function)) {
             cell = cell + inputs;
         } //End of if
 
-        if (Number(outputs) > 1 && outputs != null) {
+        if (Number(outputs) > 1 && outputs != null && !(outputs instanceof Function)) {
             cell = cell + outputs;
-        }
+        } //End of if
 
-        if (size != null) {
+        if (size != null && !(size instanceof Function)) {
             cell = cell + 'X' + size;
-        }
+        } //End of if
 
-        cellJSON = _cells['cells'][cell];
 
-        if (cellJSON["is_ff"]) {
-            // var flipflop = new FlipFlop(cellJSON);
-            // cb(null, flipflop);
-        } else {
-            var gate = new Gate(cellJSON);
-            cb(null, gate);
-        }
+        console.log(cell);
+        fs.readJson(_filename, function (err, data) {
+            if (err) {
+                cb(err);
+            } else {
+                cellJSON = data['cells'][cell];
+                if (cellJSON["is_ff"]) {
+                    cb(null, cellJSON);
+                    // var flipflop = new FlipFlop(cellJSON);
+                    // cb(null, flipflop);
+                } else if (cellJSON["is_latch"]) {
+                    cb(null, cellJSON);
+                    //latch
+                } else {
+                    var gate = new Gate(cellJSON);
+                    cb(null, gate);
+                } //End of else
+            } //End of else
+        }); //End of readJson
     }; //End of getCellByName
 
     this.getCellDelay = function (cell, outputCapacitance, inputTransition, cb) {
@@ -204,4 +247,5 @@ module.exports.Liberty = function (filename) {
 
         } //End of else if
     }; //End of getCellDelay
+
 }; //End of module.exports

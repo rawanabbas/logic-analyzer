@@ -2,13 +2,22 @@
 module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
 
     var _inputs = [];
+    var _inputPorts = [];
     var _outputs = [];
+    var _outputPorts = [];
     var _inout = [];
+    var _inoutPorts = [];
+
+
+
     var _tpd = Number.MIN_VALUE;
     var _tcd = Number.MAX_VALUE;
     var _size = 1;
 
+    var _availableSizes = [];
+
     if (cell != null) {
+
         var pins = cell["pins"];
         var keys = Object.keys(pins);
         var direction;
@@ -16,15 +25,21 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
         for (var i = 0; i < keys.length; i++) {
             port = pins[keys[i]];
             direction = port["direction"];
-            _size = Number(port["size"]);
             if (direction == "input") {
                 _inputs.push(port);
+                _inputPorts.push(keys[i]);
             } else if (direction == "output") {
                 _outputs.push(port);
+                _outputPorts.push(keys[i]);
             } else {
                 _inout.push(port);
+                _inoutPorts.push(keys[i]);
             } //End of else
         } //End of for
+        _availableSizes = cell["available_sizes"];
+        _size = cell["size"];
+
+
     } else {
         if (inputs != null) {
             _inputs = inputs;
@@ -47,6 +62,14 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
         return _inputs;
     }; //End of this.getInputs
 
+    this.getInputPorts = function () {
+        return _inputPorts;
+    }; //End of this.getInputPorts
+
+    this.getOutputPorts = function () {
+        return _outputPorts;
+    }; //End of getOutputPorts
+
     this.getOutputs = function () {
         return _outputs;
     }; //End of this.getOutputs
@@ -67,6 +90,7 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
         } //End of for in
     }; //End of this.setOutputs
 
+
     this.getPropagationDelay = function () {
         return _tpd;
     }; //End of this.getPropagationDelay
@@ -83,8 +107,12 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
         _tcd = cd;
     }; //End of setContaminationDelay
 
+    this.getAvailableSizes = function () {
+        return _availableSizes;
+    }; //End of getAvailableSizes
+
     this.connect = function (gate) {
-        
+
     }; //End of connect
 
 } //End of module.exports
