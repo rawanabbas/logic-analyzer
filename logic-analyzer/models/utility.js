@@ -1,3 +1,4 @@
+'use strict';
 module.exports =  {
     clone: function (obj) {
         // basic type deep copy

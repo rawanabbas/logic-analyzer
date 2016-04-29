@@ -1,3 +1,4 @@
+'use strict';
 var Util = require('./utility');
 module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
 
@@ -83,9 +84,6 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
     }; //End of getPoints
 
     this.getTargets = function () {
-        console.log('--------Gate Model Targets---------');
-        console.log(_targets);
-        console.log('------END Gate Model Targets-------');
         return _targets;
     }; //End of getTargets
 
