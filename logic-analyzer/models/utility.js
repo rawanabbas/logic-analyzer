@@ -1,4 +1,4 @@
-module.exports.Util =  {
+module.exports =  {
     clone: function (obj) {
         // basic type deep copy
         if (obj === null || obj === undefined || typeof obj !== 'object')  {
@@ -8,7 +8,7 @@ module.exports.Util =  {
         if (obj instanceof Array) {
             var cloneA = [];
             for (var i = 0; i < obj.length; ++i) {
-                cloneA[i] = clone(obj[i]);
+                cloneA[i] = this.clone(obj[i]);
             }
             return cloneA;
         } //End of instanceof Array
@@ -16,7 +16,7 @@ module.exports.Util =  {
         if (obj instanceof Object) {
             var cloneObj = {};
             for (var i in obj) {
-                cloneObj[i] = clone(obj[i]);
+                cloneObj[i] = this.clone(obj[i]);
             }
 
             return cloneObj;
@@ -26,17 +26,58 @@ module.exports.Util =  {
     getMaximum: function(arr, firstKey, secondKey) {
         if (arr.length === 0) {
             return -1;
-        } //End of getMaximum
+        } //End of if
 
-        var max = Number(arr[0][firstKey][secondKey]);
+        if (arr[0] instanceof Object) {
+            var max = Number(arr[0][firstKey][secondKey]);
 
-        for (var i = 1; i < arr.length; i++) {
-            if (Number(arr[i][firstKey][secondKey]) > max) {
-                max = Number(arr[i][firstKey][secondKey]);
-            } //End of if
-        } //End of for
+            for (var i = 1; i < arr.length; i++) {
+                if (Number(arr[i][firstKey][secondKey]) > max) {
+                    max = Number(arr[i][firstKey][secondKey]);
+                } //End of if
+            } //End of for
+            return max;
+        } //End of if
 
-        return max;
-    }//End of getMaximum
+        if (arr instanceof Array) {
+            var max = Number(arr[0]);
+
+            for (var i = 1; i < arr.length; i++) {
+                if (Number(arr[i]) > max) {
+                    max = Number(arr[i]);
+                } //End of if
+            } //End of for
+            return max;
+        } //End of if
+    }, //End of getMaximum
+
+    getMinimum: function (arr, firstKey, secondKey) {
+        if (arr.length === 0) {
+            return -1;
+        } //End of if
+
+        if (arr[0] instanceof Object) {
+            var min = Number(arr[0][firstKey][secondKey]);
+
+            for (var i = 1; i < arr.length; i++) {
+                if (Number(arr[i][firstKey][secondKey]) < min) {
+                    min = Number(arr[i][firstKey][secondKey]);
+                } //End of if
+            } //End of for
+            return min;
+        } //End of if
+
+        if (arr instanceof Array) {
+            var min = Number(arr[0]);
+
+            for (var i = 1; i < arr.length; i++) {
+                if (Number(arr[i]) < min) {
+                    min = Number(arr[i]);
+                } //End of if
+            } //End of for
+            return min;
+        } //End of if
+    } //End fo getMinimum
+
 
 }; //End of module.exports

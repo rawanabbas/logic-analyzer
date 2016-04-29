@@ -1,13 +1,17 @@
-
+var Util = require('./utility');
 module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
 
     var _inputs = [];
     var _inputPorts = [];
+
     var _outputs = [];
     var _outputPorts = [];
+
     var _inout = [];
     var _inoutPorts = [];
 
+    var _points = [];
+    var _targets = [];
 
 
     var _tpd = Number.MIN_VALUE;
@@ -36,9 +40,25 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
                 _inoutPorts.push(keys[i]);
             } //End of else
         } //End of for
+
         _availableSizes = cell["available_sizes"];
         _size = cell["size"];
 
+        for (var i = 0; i < _outputPorts.length; i++) {
+            for (var j = 0; j < _inputPorts.length; j++) {
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['points']);
+
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['points']);
+
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['points']);
+
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['points']);
+            } //End of for j
+        } //End of for i
 
     } else {
         if (inputs != null) {
@@ -57,6 +77,17 @@ module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
             _size = size;
         }
     }
+
+    this.getPoints = function () {
+        return _points;
+    }; //End of getPoints
+
+    this.getTargets = function () {
+        console.log('--------Gate Model Targets---------');
+        console.log(_targets);
+        console.log('------END Gate Model Targets-------');
+        return _targets;
+    }; //End of getTargets
 
     this.getInputs = function () {
         return _inputs;

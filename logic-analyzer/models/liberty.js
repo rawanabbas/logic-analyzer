@@ -3,51 +3,11 @@
 var fs = require('fs-extra');
 var TPS = require('../node_modules/thinplate/thinplate');
 
+var  Util = require('./utility');
 var Gate = require('./gate').Gate;
 // var FlipFlop = require('./flipflop').FlipFlop;
 
-function clone(obj) {
-    // basic type deep copy
-    if (obj === null || obj === undefined || typeof obj !== 'object')  {
-        return obj
-    } //End of basic deep copy
-    // array deep copy
-    if (obj instanceof Array) {
-        var cloneA = [];
-        for (var i = 0; i < obj.length; ++i) {
-            cloneA[i] = clone(obj[i]);
-        }
-        return cloneA;
-    } //End of instanceof Array
-    // object deep copy
-    if (obj instanceof Object) {
-        var cloneObj = {};
-        for (var i in obj) {
-            cloneObj[i] = clone(obj[i]);
-        }
 
-        return cloneObj;
-    } //End of instanceof Object
-} //End of clone
-
-function getMaximum(arr, firstKey, secondKey) {
-    if (arr.length === 0) {
-        return -1;
-    } //End of getMaximum
-
-    var max = Number(arr[0][firstKey][secondKey]);
-
-    for (var i = 1; i < arr.length; i++) {
-        if (Number(arr[i][firstKey][secondKey]) > max) {
-            max = Number(arr[i][firstKey][secondKey]);
-        } //End of if
-    } //End of for
-
-    return max;
-} //End of getMaximum
-
-module.exports.getMaximum = getMaximum;
-module.exports.clone = clone;
 
 module.exports.Liberty = function (filename) {
 
@@ -65,7 +25,7 @@ module.exports.Liberty = function (filename) {
 
     var _setCells = function (cells) {
         console.log('Inside _setCells()');
-        _cells = clone(cells);
+        _cells = Util.clone(cells);
     }; //End of _setCells
 
     var _estimate = function (fitPoints, targets, point) {
@@ -87,50 +47,73 @@ module.exports.Liberty = function (filename) {
     }; //End of _estimate
 
     var _getGateDelay = function (gate, inputTransition, outputCapacitance, cb) {
-        if (cell == null || outputCapacitance == null || inputTransition == null) {
+        if (gate == null || outputCapacitance == null || inputTransition == null) {
             cb({error: 'Either cellName or outputCapacitance or inputTransition is not provided.'});
         } //End of if
 
         var tpd, tcd;
 
+        var delays = [];
+
         var inputs = gate.getInputs();
         var outputs = gate.getOutputs();
+        console.log('--------Inputs--------');
+        console.log(inputs);
+        console.log('-----END Inputs--------');
+        var points = Util.clone(gate.getPoints());
+        var targets = Util.clone(gate.getTargets());
 
-        var cellRise = [];
-        var cellFall = [];
+        console.log('--------Targets--------');
+        console.log(delays);
+        console.log('------END Targets------');
 
-        for (var i = 0; i < outputs.length; i++) {
-            for (var j = 0; j < inputs.length; j++) {
-
-                cellRise.push(outputs[i]['timing'][inputs[j]["name"]]["cell_rise"]["table"]);
-                cellFall.push(outputs[i]['timing'][inputs[j]["name"]]["cell_fall"]["table"]);
-            } //End of for j
-        } //End of for i
-
-        var xValues = outputs[0]['timing'][inputs[0]["name"]]["cell_rise"]["x_values"];
-        var yValues = outputs[0]['timing'][inputs[0]["name"]]["cell_rise"]["y_values"];
-
-        var fitpoints = [];
-        var targetsPD = [];
-        var targetsCD = [];
-
-        for (var i = 0; i < xValues.length; i++) {
-            fitpoints.push([Number(xValues[i]), Number(yValues[i])]);
-            targetsPD.push(getMaximum(cellFall, yValues[i], xValues[i]));
-            targetsCD.push(getMaximum(cellRise, yValues[i], xValues[i]));
+        for (var i = 0; i < points.length; i++) {
+            delays.push(_estimate(points[i], targets[i], [Number(inputTransition), Number(outputCapacitance)]));
         } //End of for
 
-        tpd = _estimate(fitpoints, targetsPD, [Number(inputTransition), Number(outputCapacitance)]);
-        tcd = _estimate(fitpoints, targetsCD, [Number(inputTransition), Number(outputCapacitance)]);
+        console.log('--------Delays--------');
+        console.log(delays);
+        console.log('------END Delays------');
 
-        if (tcd > tpd) {
-            tpd = [tcd, tcd = tpd][0];
-        } //End of if
+        tpd = Util.getMaximum(delays);
+        tcd = Util.getMinimum(delays);
 
-        cell.setPropagationDelay(tpd);
-        cell.setContaminationDelay(tcd);
+        // var cellRise = [];
+        // var cellFall = [];
+        //
+        // for (var i = 0; i < outputs.length; i++) {
+        //     for (var j = 0; j < inputs.length; j++) {
+        //
+        //         cellRise.push(outputs[i]['timing'][inputs[j]["name"]]["cell_rise"]["table"]);
+        //         cellFall.push(outputs[i]['timing'][inputs[j]["name"]]["cell_fall"]["table"]);
+        //     } //End of for j
+        // } //End of for i
+        //
+        // var xValues = outputs[0]['timing'][inputs[0]["name"]]["cell_rise"]["x_values"];
+        // var yValues = outputs[0]['timing'][inputs[0]["name"]]["cell_rise"]["y_values"];
+        //
+        // var fitpoints = [];
+        // var targetsPD = [];
+        // var targetsCD = [];
+        //
+        // for (var i = 0; i < xValues.length; i++) {
+        //     fitpoints.push([Number(xValues[i]), Number(yValues[i])]);
+        //     targetsPD.push(getMaximum(cellFall, yValues[i], xValues[i]));
+        //     targetsCD.push(getMaximum(cellRise, yValues[i], xValues[i]));
+        // } //End of for
+        //
+        // tpd = _estimate(fitpoints, targetsPD, [Number(inputTransition), Number(outputCapacitance)]);
+        // tcd = _estimate(fitpoints, targetsCD, [Number(inputTransition), Number(outputCapacitance)]);
+        //
+        // if (tcd > tpd) {
+        //     tpd = [tcd, tcd = tpd][0];
+        // } //End of if
+        console.log("tpd: %d", tpd);
+        console.log("tcd: %d", tcd);
+        gate.setPropagationDelay(tpd);
+        gate.setContaminationDelay(tcd);
 
-        cb(null, cell);
+        cb(null, gate);
     }; //End of _getGateDelay
 
     var _getFlipFlopDelay = function (flipflop, inputTransition, outputCapacitance, cb) {
@@ -155,7 +138,7 @@ module.exports.Liberty = function (filename) {
             } else {
                 console.log('Inside else parseLibertyFile');
                 // _setCells(data);
-                _cells = clone(data['cells']);
+                _cells = Util.clone(data['cells']);
                 console.log('After _cells = clone;');
                 if (!cb) {
                     cb(null, data);
