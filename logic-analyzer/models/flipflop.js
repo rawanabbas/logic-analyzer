@@ -18,14 +18,37 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         max: Number.MIN_VALUE,
         min: Number.MAX_VALUE
     };
-    var _setup = {};
-    var _hold = {};
+    var _setup = {
+        max: Number.MIN_VALUE,
+        min: Number.MAX_VALUE
+    };
+    var _hold = {
+        max: Number.MIN_VALUE,
+        min: Number.MAX_VALUE
+    };
 
     var _holdPoints = [];
     var _setupPoints = [];
+    var _tcqPoints = [];
 
     var _holdTargets = [];
     var _setupTargets = [];
+    var _tcqTargets = [];
+
+    var _inputSlew = {
+        max: Number.MIN_VALUE,
+        min: Number.MAX_VALUE
+    };
+
+    var _capacitanceLoad = {
+        max: Number.MIN_VALUE,
+        min: Number.MAX_VALUE
+    };
+
+    var _outputSlew = {
+        max: Number.MIN_VALUE,
+        min: Number.MAX_VALUE
+    };
 
     var _setClock = function (clk) {
         _clk = clk;
@@ -68,11 +91,27 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         _setupTargets.push(setup["fall_constraint"]["targets"]);
     }; //End of _setSetupPointsTargets
 
+    var _setTcqPointsTargets = function (tcq) {
+
+        _tcqPoints.push(tcq["cell_rise"]["points"]);
+        _tcqPoints.push(tcq["rise_transition"]["points"]);
+
+        _tcqPoints.push(tcq["cell_fall"]["points"]);
+        _tcqPoints.push(tcq["fall_transition"]["points"]);
+
+        _tcqTargets.push(tcq["cell_rise"]["targets"]);
+        _tcqTargets.push(tcq["rise_transition"]["targets"]);
+
+        _tcqTargets.push(tcq["cell_fall"]["targets"]);
+        _tcqTargets.push(tcq["fall_transition"]["targets"]);
+    }; //End of _setTcqPointsTargets
+
     if (cell != null) {
         _setEdge(cell["ff"]["clocked_on"]);
         _setPins(cell["pins"]);
-        _setHoldPointsTargets(cell["hold_rising"]);
-        _setSetupPointsTargets(cell["setup_rising"]);
+        _setHoldPointsTargets(cell["hold_rising"] || cell["hold_falling"]);
+        _setSetupPointsTargets(cell["setup_rising"] || cell["setup_falling"]);
+        _setTcqPointsTargets(cell["pins"]["Q"]["timing"]["CLK"]);
     } else {
         // TODO: Handle arguments passed one by one
     }
@@ -101,6 +140,10 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         return _tcq.min;
     }; //End of getMinimumTCQ
 
+    this.getTCQ = function () {
+        return _tcq;
+    }; //End of getTCQ
+
     this.getClock = function () {
         return _clk;
     }; //End of getClock
@@ -121,6 +164,10 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         return _setupPoints;
     }; //End of getHoldPoints
 
+    this.getTcqPoints = function () {
+        return _tcqPoints;
+    }; //End of getTcqPoints
+
     this.getHoldTargets = function () {
         return _holdTargets;
     }; //End of getHoldPoints
@@ -128,6 +175,14 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     this.getSetupTargets = function () {
         return _setupTargets;
     }; //End of getHoldPoints
+
+    this.getTcqTargets = function () {
+        return _tcqTargets;
+    }; //End of getHoldPoints
+
+    this.setTCQ = function (tcq) {
+        _tcq = Util.clone(tcq);
+    }; //End of setTCQ
 
     this.setSetup = function (setup) {
         _setup = Util.clone(setup);
@@ -137,5 +192,28 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         _hold = Util.clone(hold);
     }; //End of _setHold
 
+    this.setInputSlew = function (inputSlew) {
+        _inputSlew = Util.clone(inputSlew);
+    }; //End of inputSlew
+
+    this.getInputSlew = function () {
+        return _inputSlew;
+    };
+
+    this.setCapacitanceLoad = function (capacitanceLoad) {
+        _capacitanceLoad = Util.clone(capacitanceLoad);
+    }; //End of setCapacitanceLoad
+
+    this.getCapacitanceLoad = function () {
+        return _capacitanceLoad;
+    }; //End of getCapacitanceLoad
+
+    this.setOutputSlew = function (outputSlew) {
+        _outputSlew = Util.clone(outputSlew);
+    }; // End of setOutputSlew
+
+    this.getOutputSlew = function () {
+        return _outputSlew;
+    }; //End of getOutputSlew
 
 }; //End of module.exports.FlipFlop

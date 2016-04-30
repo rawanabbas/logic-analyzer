@@ -20,8 +20,7 @@ router.get('/', function(req, res, next) {
                 if (err) {
                     res.status(500).json(err);
                 } else {
-                    console.log(cell);
-                    res.status(200).json({setup: cell.getSetupTime(), hold: cell.getHoldTime()});
+                    res.status(200).json({setup: cell.getSetupTime(), hold: cell.getHoldTime(), tcq: cell.getTCQ()});
                 } //End of else
             }); //End of getCellDelay
         } //End of else
