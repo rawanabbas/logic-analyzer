@@ -3,31 +3,24 @@ var fs = require('fs-extra');
 var Graphlib = require('graphlib');
 var Graph = Graphlib.Graph;
 
-var Liberty = require('./liberty').Liberty;
-var Gate = require('./gate').Gate;
+var Util = require('./utility');
 
-var clone = require('./liberty').clone;
+var Liberty = require('./liberty');
+var Gate = require('./gate');
 
-module.exports.Netlist = function (filename) {
+
+module.exports = function (netlist, capacitance, clk, constraints) {
     console.log('Inside Netlist.');
-    var _filename;
+
+    var _netlist;
+    var _capacitance;
+    var _clk;
+    var _constraints;
     var _ports;
     var _cells;
     var _module;
     var _graph = new Graph({directed: true});
     var liberty = new Liberty();
-
-    var _getInOutBits = function (connections) {
-        var bits = [];
-        var connectionKeys = Object.keys(connections);
-        for (var i = 0; i < connectionKeys.length; i++) {
-            var connectionBits = connections[connectionKeys[i]];
-            for (var j = 0; j < connectionBits.length; j++) {
-                bits.push(connectionBits[j]);
-            } //End of for j
-        } //End of for i
-        return bits;
-    }; //End of _getInOutBits
 
     var _renameGraphNode = function (node, newNode, label) {
         if (node == null || newNode == null) {
@@ -51,7 +44,6 @@ module.exports.Netlist = function (filename) {
             var connection = _cells[keys[i]]['connections'];
             var connectionKeys = Object.keys(connection);
 
-            // _graph.setNode(keys[i], Liberty.getCellByName(_cells[keys[i]]['type']));
             liberty.getCellByName(_cells[keys[i]]['type'], function (err, cell) {
                 if (err) {
                     console.error(err);
@@ -95,11 +87,11 @@ module.exports.Netlist = function (filename) {
         }
     }; //End of constructGraph
 
-    this.parseNetlist = function (filename, cb) {
-        if (filename == null) {
+    this.parseNetlist = function (netlist, cb) {
+        if (netlist == null) {
             throw Error("File is not provided for parsing.");
         }
-        fs.readJson(_filename, function (err, data) {
+        fs.readJson(_netlist, function (err, data) {
             if (err) {
                 console.error("An error has occured while reading the liberty file.");
                 cb(err);
@@ -139,16 +131,20 @@ module.exports.Netlist = function (filename) {
     }; //End of parseNetlist
 
     this.getGraph = function () {
-        this.parseNetlist(_filename, function (err, success) {
-            if (err) {
-                throw Error("The netlist was not correctly parsed");
-            }
-        }); //End of parseNetlist
         return Graphlib.json.write(_graph);
     }; //End fo getGraph
 
-    if (filename != null) {
-        _filename = filename;
-        // this.parseNetlist(_filename);
+    // this.parseCapacitanceFile = function (capacitance) {
+    //
+    // };
+
+    if (netlist != null) {
+        _netlist = netlist;
+        this.parseNetlist(_netlist, function (err) {
+            if (err) {
+                console.error(err);
+                throw Error(err);
+            }
+        }); //End of parseNetlist
     }
 };

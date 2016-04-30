@@ -4,11 +4,11 @@ var fs = require('fs-extra');
 var TPS = require('../node_modules/thinplate/thinplate');
 
 var  Util = require('./utility');
-var Gate = require('./gate').Gate;
-// var FlipFlop = require('./flipflop').FlipFlop;
+var Gate = require('./gate');
+var FlipFlop = require('./flipflop');
 
 
-module.exports.Liberty = function (filename) {
+module.exports = function (filename) {
 
     var _technology;
     var _cells;
@@ -57,9 +57,9 @@ module.exports.Liberty = function (filename) {
                 } //End of else
             }); //End of estimate
         } else {
-            var tpd = Util.getMaximum(delays);
-            var tcd = Util.getMinimum(delays);
-            cb(null, {tpd: tpd, tcd: tcd});
+            var max = Util.getMaximum(delays);
+            var min = Util.getMinimum(delays);
+            cb(null, {max: max, min: min});
         } //End of else
     } //End of _getEstimation
 
@@ -77,8 +77,8 @@ module.exports.Liberty = function (filename) {
             if (err) {
                 cb(err);
             } else {
-                gate.setPropagationDelay(delay.tpd);
-                gate.setContaminationDelay(delay.tcd);
+                gate.setPropagationDelay(delay.max);
+                gate.setContaminationDelay(delay.min);
                 cb(null, gate);
             } //End of else
         }); //End of _getEstimation
@@ -90,8 +90,32 @@ module.exports.Liberty = function (filename) {
             cb({error: 'Either the cell JSON, inputTransition or outputCapacitance is not provided.'});
         } //End of if
 
+        //Points and targets for estimation
 
+        var holdPoints = flipflop.getHoldPoints();
+        var holdTargets = flipflop.getHoldTargets();
 
+        var setupPoints = flipflop.getSetupPoints();
+        var setupTargets = flipflop.getSetupTargets();
+
+        var holdDelays = [];
+        var setupDelays = [];
+        //Get hold and setup times
+        _getEstimation(0, holdPoints, holdTargets, [Number(inputTransition), Number(outputCapacitance)], holdDelays, function (err, delay) {
+            if (err) {
+                cb(err);
+            } else {
+                flipflop.setHold(delay);
+                _getEstimation(0, setupPoints, setupTargets, [Number(inputTransition), Number(outputCapacitance)], setupDelays, function (err, setup) {
+                    if (err) {
+                        cb(null)
+                    } else {
+                        flipflop.setSetup(setup);
+                        cb(null, flipflop);
+                    } //End of else
+                }); //End of _getEstimation
+            } //End ofelse
+        }); //End of _getEstimation
     }; //End of _getFlipFlopDelay
 
     this.parseLibertyFile = function (cb) {
@@ -164,9 +188,8 @@ module.exports.Liberty = function (filename) {
             } else {
                 cellJSON = data['cells'][cell];
                 if (cellJSON["is_ff"]) {
-                    cb(null, cellJSON);
-                    // var flipflop = new FlipFlop(cellJSON);
-                    // cb(null, flipflop);
+                    var flipflop = new FlipFlop(cellJSON);
+                    cb(null, flipflop);
                 } else if (cellJSON["is_latch"]) {
                     cb(null, cellJSON);
                     //latch
@@ -181,9 +204,9 @@ module.exports.Liberty = function (filename) {
     this.getCellDelay = function (cell, outputCapacitance, inputTransition, cb) {
 
         if (cell == null || outputCapacitance == null || inputTransition == null) {
-            cb({error: 'Either cellName or outputCapacitance or inputTransition is not provided.'});
+            cb({error: 'Either cell or outputCapacitance or inputTransition is not provided.'});
         } else if (cell instanceof Gate) {
-            _getGateDelay(cell, outputCapacitance, inputTransition, function (err, gate) {
+            _getGateDelay(cell, inputTransition, outputCapacitance, function (err, gate) {
                 if (err) {
                     console.error("----An error has occured------");
                     console.error(err);
@@ -194,8 +217,17 @@ module.exports.Liberty = function (filename) {
             }); //End of _getGateDelay
 
         } else if (cell instanceof FlipFlop) {
-            var tcq, setup, hold;
-
+            var setup, hold;
+            _getFlipFlopDelay(cell, inputTransition, outputCapacitance, function (err, flipflop) {
+                if (err) {
+                    console.error("----An error has occured------");
+                    console.error(err);
+                    cb(err);
+                } else {
+                    console.log(flipflop);
+                    cb(null, flipflop);
+                } //End of else
+            }); //End of _getFlipFlopDelay
         } //End of else if
     }; //End of getCellDelay
 

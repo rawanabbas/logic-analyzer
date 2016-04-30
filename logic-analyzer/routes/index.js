@@ -3,24 +3,25 @@ var express = require('express');
 var router = express.Router();
 
 // var Graph = require('graphlib').Graph;
-var Liberty = require('../models/liberty').Liberty;
-var Gate = require('../models/gate').Gate;
-var Netlist = require('../models/netlist').Netlist;
+var Liberty = require('../models/liberty');
+var Gate = require('../models/gate');
+var FlipFlop = require('../models/flipflop');
+var Netlist = require('../models/netlist');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
     var liberty = new Liberty();
     console.log('Inside of /');
-    liberty.getCellByName('AND2X1', function (err, cell) {
+    liberty.getCellByName('DFFPOSX1', function (err, cell) {
         if (err) {
             res.status(500).json(err);
         } else {
-            liberty.getCellDelay(cell, "0.08", "0.42", function (err, cell) {
+            liberty.getCellDelay(cell, "1.2", "0.6", function (err, cell) {
                 if (err) {
                     res.status(500).json(err);
                 } else {
-                    
-                    res.status(200).json({tpd: cell.getPropagationDelay(), tcd: cell.getContaminationDelay()});
+                    console.log(cell);
+                    res.status(200).json({setup: cell.getSetupTime(), hold: cell.getHoldTime()});
                 } //End of else
             }); //End of getCellDelay
         } //End of else

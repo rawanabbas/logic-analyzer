@@ -1,6 +1,6 @@
 'use strict';
 var Util = require('./utility');
-module.exports.Gate = function (cell, inputs, outputs, size, tpd, tcd) {
+module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
 
     var _inputs = [];
     var _inputPorts = [];
