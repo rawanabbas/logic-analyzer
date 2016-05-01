@@ -14,8 +14,6 @@ module.exports = function (netlist, capacitance, clk, constraints) {
 
     var _netlist;
     var _capacitance;
-    var _clk;
-    var _constraints;
     var _ports;
     var _cells;
     var _module;
@@ -38,7 +36,7 @@ module.exports = function (netlist, capacitance, clk, constraints) {
         } //End of for
     }; //End of renameGraphNode
 
-    var _constructGraph = function (i) {
+    var _constructGraph = function (i, cb) {
         var keys = Object.keys(_cells);
         if (i < keys.length) {
             var connection = _cells[keys[i]]['connections'];
@@ -75,7 +73,7 @@ module.exports = function (netlist, capacitance, clk, constraints) {
                         } //End of else
                     } //End of for j
                 } //End of else
-                _constructGraph(i + 1);
+                _constructGraph(i + 1, cb);
             }); //End of getCellByName
         } else {
             console.log('---------Graph Edges----------');
@@ -84,7 +82,8 @@ module.exports = function (netlist, capacitance, clk, constraints) {
             console.log('---------Graph Nodes----------');
             console.log(_graph.nodes());
             console.log('-------End Graph Nodes--------');
-        }
+            cb(null, _graph);
+        } //End of else
     }; //End of constructGraph
 
     this.parseNetlist = function (netlist, cb) {
@@ -119,13 +118,13 @@ module.exports = function (netlist, capacitance, clk, constraints) {
                         } //End of for j
                     } //End of else
                 } //End of for portKeys
-                console.log('----Keys-----');
-                console.log(keys);
-                console.log('---End of Keys----');
-                _constructGraph(0);
-
-                // } //End of for
-                cb(null, true);
+                _constructGraph(0, function (err, graph) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        cb(null, _graph);
+                    }
+                });
             } //End of else
         });//End of readJson
     }; //End of parseNetlist
@@ -134,17 +133,39 @@ module.exports = function (netlist, capacitance, clk, constraints) {
         return Graphlib.json.write(_graph);
     }; //End fo getGraph
 
-    // this.parseCapacitanceFile = function (capacitance) {
-    //
-    // };
+    this.parseCapacitanceFile = function (capacitance, cb) {
+        console.log('------------------ Capacitance File --------------------');
+        fs.readJson(capacitance, function (err, data) {
+            if (err) {
+                console.error(err);
+                cb(err);
+            } else {
+                for (var key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        // TODO: 
+                    } //End of if
+                } //End for in
+                console.log('--------------- END Capacitance File -------------------');
+                cb(null, data);
+            } //End of else
+        }); //End of readJson
+    }; //End of parseCapacitanceFile
 
-    if (netlist != null) {
+    if (netlist != null && capacitance != null) {
         _netlist = netlist;
-        this.parseNetlist(_netlist, function (err) {
+        var Netlist = this;
+        Netlist.parseNetlist(_netlist, function (err, graph) {
             if (err) {
                 console.error(err);
                 throw Error(err);
-            }
+            } else {
+                Netlist.parseCapacitanceFile(capacitance, function (err) {
+                    if (err) {
+                        console.error(err);
+                        throw Error(err);
+                    } //End of if err
+                }); //End of parseCapacitanceFile
+            } //End of else
         }); //End of parseNetlist
-    }
-};
+    } //End of if
+}; //End of module.exports

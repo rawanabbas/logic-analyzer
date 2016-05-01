@@ -2,6 +2,8 @@
 var Util = require('./utility');
 module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
 
+    var _name;
+
     var _inputs = [];
     var _inputPorts = [];
 
@@ -21,9 +23,33 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
 
     var _availableSizes = [];
 
-    if (cell != null) {
+    var _setPointsTargets = function (pins) {
+        for (var i = 0; i < _outputPorts.length; i++) {
+            for (var j = 0; j < _inputPorts.length; j++) {
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['points']);
 
-        var pins = cell["pins"];
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['points']);
+
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['points']);
+
+                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['targets']);
+                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['points']);
+            } //End of for j
+        } //End of for i
+    }; //End of _setPointsTargets
+
+    var _setSize = function (size) {
+        _size = size;
+    }; //End of _setSize
+
+    var _setAvailableSizes = function (sizes) {
+        _availableSizes = Util.clone(sizes);
+    };
+
+    var _setInputOutputPorts = function (pins) {
         var keys = Object.keys(pins);
         var direction;
         var port;
@@ -41,43 +67,25 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
                 _inoutPorts.push(keys[i]);
             } //End of else
         } //End of for
+    }; //End of _setInputOutputPorts
 
-        _availableSizes = cell["available_sizes"];
-        _size = cell["size"];
-
-        for (var i = 0; i < _outputPorts.length; i++) {
-            for (var j = 0; j < _inputPorts.length; j++) {
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['points']);
-
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['points']);
-
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['points']);
-
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['points']);
-            } //End of for j
-        } //End of for i
-
+    if (cell != null) {
+        var pins = cell["pins"];
+        _setInputOutputPorts(pins);
+        _setAvailableSizes(cell["available_sizes"]);
+        _setSize(cell["size"]);
+        _setPointsTargets(pins);
     } else {
-        if (inputs != null) {
-            _inputs = inputs;
-        }
-        if (outputs != null) {
-            _outputs = outputs;
-        }
-        if (tpd != null) {
-            _tpd = tpd;
-        }
-        if (tcd != null) {
-            _tcd = tcd;
-        }
-        if (size != null) {
-            _size = size;
-        }
+        // TODO: One by One assignment
     }
+
+    this.setName = function (name) {
+        _name = name;
+    }; //End of setName
+
+    this.getName = function () {
+        return _name;
+    }; //End of getName
 
     this.getPoints = function () {
         return _points;
@@ -102,23 +110,6 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     this.getOutputs = function () {
         return _outputs;
     }; //End of this.getOutputs
-
-    this.setInputs = function (inputs) {
-        for (var input in inputs) {
-            if (inputs.hasOwnProperty(input)) {
-                _inputs.push(input);
-            } //End of if
-        } //End of for in
-    }; //End of this.setInputs
-
-    this.setOutputs = function (outputs) {
-        for (var output in outputs) {
-            if (outputs.hasOwnProperty(output)) {
-                _outputs.push(output);
-            } //End of if
-        } //End of for in
-    }; //End of this.setOutputs
-
 
     this.getPropagationDelay = function () {
         return _tpd;

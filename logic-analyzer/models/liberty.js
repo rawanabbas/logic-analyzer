@@ -10,7 +10,6 @@ var FlipFlop = require('./flipflop');
 
 module.exports = function (filename) {
 
-    var _technology;
     var _cells;
     var _filename = process.env.PWD + '/uploads/osu350.json';
 
@@ -131,28 +130,6 @@ module.exports = function (filename) {
             } //End ofelse
         }); //End of _getEstimation
     }; //End of _getFlipFlopDelay
-
-    this.parseLibertyFile = function (cb) {
-        fs.readJson(_filename, function (err, data) {
-            if (err) {
-                console.error("An error has occured while reading the liberty file.");
-                if (cb) {
-                    cb(err);
-                }
-                throw Error(err);
-            } else {
-                // _setCells(data);
-                _cells = Util.clone(data['cells']);
-                if (!cb) {
-                    cb(null, data);
-                } //End of if
-            } //End of else
-        });//End of readJson
-    } //End of parseLibertyFile
-
-    this.getTechnology = function () {
-        return _technology;
-    }; //End of getTechnology
 
     this.getCells = function () {
         return _cells;
