@@ -10,7 +10,6 @@ var FlipFlop = require('./flipflop');
 
 module.exports = function (filename) {
 
-    var _cells;
     var _filename = process.env.PWD + '/uploads/osu350.json';
 
     if (filename != null) {
@@ -149,10 +148,6 @@ module.exports = function (filename) {
             } //End ofelse
         }); //End of _getEstimation
     }; //End of _getFlipFlopDelay
-
-    this.getCells = function () {
-        return _cells;
-    }; //End of getCells
 
     this.getCellByName = function (cellType, inputs, outputs, size, cb) {
 

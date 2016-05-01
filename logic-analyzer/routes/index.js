@@ -10,22 +10,21 @@ var Netlist = require('../models/netlist');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    var liberty = new Liberty();
-    console.log('Inside of /');
-    liberty.getCellByName('AND2X1', function (err, cell) {
-        if (err) {
-            res.status(500).json(err);
-        } else {
-            liberty.getCellDelay(cell, "1.2", "0.4", function (err, cell) {
-                if (err) {
-                    res.status(500).json(err);
-                } else {
-                    res.status(200).json(cell.getDelay());
-                } //End of else
-            }); //End of getCellDelay
-        } //End of else
-    }); //End of getCellByName
-});
+    //     var liberty = new Liberty();
+    //     console.log('Inside of /');
+    //     liberty.getCellByName('AND2X1', function (err, cell) {
+    //         if (err) {
+    //             res.status(500).json(err);
+    //         } else {
+    //             liberty.getCellDelay(cell, "1.2", "0.4", function (err, cell) {
+    //                 if (err) {
+    //                     res.status(500).json(err);
+    //                 } else {
+    //                     res.status(200).json(cell.getDelay());
+    //                 } //End of else
+    //             }); //End of getCellDelay
+    //         } //End of else
+    //     }); //End of getCellByName
     // console.log('Inside Get /');
     // var graph = new Graph({directed: true, multigraph: false});
     // graph.setNode("a", "a-value");
@@ -39,6 +38,15 @@ router.get('/', function(req, res, next) {
     // res.status(200).json(graph.edges());
     // var netlist = new Netlist("./uploads/test1.json", "./uploads/test1.cap.json");
     // res.status(200).json("Netlist and Capacitance file parsed!");
-// }); //End of get /
+    console.log('Insise Get /');
+    var netlist = new Netlist('./uploads/test1.json', './uploads/test1.const.json');
+    // var graph = netlist.getGraph();
+    // if (graph) {
+    //     res.status(200).json(graph);
+    // } else {
+    //     res.status(500).json("something went wrong. :(")
+    // } //End  of else
+    res.status(200).send("DONE!!")
+}); //End of get /
 
 module.exports = router;

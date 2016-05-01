@@ -7,42 +7,46 @@ var Util = require('./utility');
 
 var Liberty = require('./liberty');
 var Gate = require('./gate');
+var FlipFlop = require('./flipflop');
+var Clock = require('./clock');
+var Constraint = require('./constraint');
 
 
-module.exports = function (netlist, capacitance, clk, constraints) {
+module.exports = function (netlist, constraint, capacitance, clk, constraints) {
     console.log('Inside Netlist.');
 
-    var _netlist;
+    var _netlistFilename;
+    var _constraintFilename;
     var _capacitance;
     var _ports;
     var _cells;
     var _module;
     var _graph = new Graph({directed: true});
-    var liberty = new Liberty();
+    var _liberty = new Liberty();
+    var _constraints = new Constraint(constraint);
 
-    var _renameGraphNode = function (node, newNode, label) {
-        if (node == null || newNode == null) {
-            throw Error("renameGraphNode() must contain node and newNode");
-        } //End of if
-        var nodeEgdes = _graph.nodeEdges(node);
-        _graph.removeNode(node);
-        _graph.setNode(newNode, label);
-        for (var i = 0; i < nodeEgdes.length; i++) {
-            if (nodeEgdes[i]["v"] == node) {
-                _graph.setEdge(newNode, nodeEgdes[i]["w"]);
-            } else if (nodeEgdes[i]["w"] == node) {
-                _graph.setEdge(nodeEgdes[i]["v"], newNode);
-            } //End of else
-        } //End of for
-    }; //End of renameGraphNode
+    var _getConstraints = function (filename) {
+        _constraints.parseConstraint(filename);
+    }; //End of _getConstraints
+
+    var _setPortProperties = function (port, constraints) {
+        // console.log(port);
+        if (_isInput(port)) {
+            _ports[port].input_delay  = constraints.getInputDelay(port);
+            _ports[port].input_slew  = constraints.getInputSlew(port);
+        } else {
+            _ports[port].capacitance_load = constraints.getInputDelay(port);
+        } //End of else
+    }; //End of _setPortProperties
 
     var _constructGraph = function (i, cb) {
+        // console.log('Constructing Graph.....');
         var keys = Object.keys(_cells);
         if (i < keys.length) {
             var connection = _cells[keys[i]]['connections'];
             var connectionKeys = Object.keys(connection);
 
-            liberty.getCellByName(_cells[keys[i]]['type'], function (err, cell) {
+            _liberty.getCellByName(_cells[keys[i]]['type'], function (err, cell) {
                 if (err) {
                     console.error(err);
                     throw Error(err);
@@ -51,25 +55,21 @@ module.exports = function (netlist, capacitance, clk, constraints) {
                     var outputs = cell.getOutputPorts();
 
                     for (var j = 0; j < connectionKeys.length; j++) {
-                        console.log('***********Connection Keys**************');
-                        console.log(connectionKeys[j]);
-                        console.log('**********End Connection Keys***********');
                         if (inputs.indexOf(connectionKeys[j]) > -1) {
-                            console.log('----Inputs-----');
+                            // console.log('----Inputs-----');
                             if (_graph.hasNode(connection[connectionKeys[j]][0])) {
                                 _renameGraphNode(connection[connectionKeys[j]][0], keys[i], cell);
                             } else {
                                 _graph.setEdge(connection[connectionKeys[j]][0], keys[i], connection[connectionKeys[j]][0]);
                             } //End of else
-                            console.log('----End Inputs----');
+                            // console.log('----End Inputs----');
                         } else {
-                            console.log('=====Outputs=====');
+                            // console.log('=====Outputs=====');
                             if (_graph.hasNode(connection[connectionKeys[j]][0])) {
                                 _renameGraphNode(connection[connectionKeys[j]][0], keys[i], cell);
                             } else {
                                 _graph.setEdge(keys[i], connection[connectionKeys[j]][0], connection[connectionKeys[j]][0]);
                             } //End of else
-                            console.log('=====End Outputs=====');
                         } //End of else
                     } //End of for j
                 } //End of else
@@ -82,17 +82,49 @@ module.exports = function (netlist, capacitance, clk, constraints) {
             console.log('---------Graph Nodes----------');
             console.log(_graph.nodes());
             console.log('-------End Graph Nodes--------');
+            // console.log('Graph Constructed!');
             cb(null, _graph);
         } //End of else
     }; //End of constructGraph
+
+    var _isInput = function (port) {
+        return _ports[port].direction == "input";
+    };
+
+    var _isClock = function (port) {
+        return (_ports[port] == "CLK");
+    };
+
+    var _renameGraphNode = function (node, newNode, label) {
+        if (node == null || newNode == null) {
+            throw Error("renameGraphNode() must contain node and newNode");
+        } //End of if
+        var nodeEdges = _graph.nodeEdges(node);
+        var labels = [];
+        // console.log('-=--=-=-=-=-=-= Node Edges =-=-=-=-=-=-=-');
+        for (var i = 0; i < nodeEdges.length; i++) {
+            // console.log(nodeEdges[i]);
+            labels[i] = _graph.edge(nodeEdges[i]);
+        }
+        // console.log('-=--=-=-=-=-= END Node Edges =-=-=-=-=-=-=-');
+        _graph.removeNode(node);
+        _graph.setNode(newNode, label);
+        for (var i = 0; i < nodeEdges.length; i++) {
+            if (nodeEdges[i]["v"] == node) {
+                _graph.setEdge(newNode, nodeEdges[i]["w"], labels[i]);
+            } else if (nodeEdges[i]["w"] == node) {
+                _graph.setEdge(nodeEdges[i]["v"], newNode, labels[i]);
+            } //End of else
+        } //End of for
+    }; //End of renameGraphNode
 
     this.parseNetlist = function (netlist, cb) {
         if (netlist == null) {
             throw Error("File is not provided for parsing.");
         }
-        fs.readJson(_netlist, function (err, data) {
+        fs.readJson(_netlistFilename, function (err, data) {
             if (err) {
-                console.error("An error has occured while reading the liberty file.");
+                console.error("An error has occured while reading the netlist file.");
                 cb(err);
             } else {
                 _module = Object.keys(data['modules'])[0];
@@ -106,6 +138,8 @@ module.exports = function (netlist, capacitance, clk, constraints) {
                 for (var i = 0; i < portKeys.length; i++) {
 
                     var bits = _ports[portKeys[i]]['bits'];
+                    // _getConstraints(_constraintFilename);
+                    _setPortProperties(portKeys[i], _constraints)
                     _graph.setNode(portKeys[i], _ports[portKeys[i]]);
 
                     if (_ports[portKeys[i]]['direction'] == 'input') {
@@ -142,7 +176,7 @@ module.exports = function (netlist, capacitance, clk, constraints) {
             } else {
                 for (var key in data) {
                     if (data.hasOwnProperty(key)) {
-                        // TODO: 
+                        // TODO:
                     } //End of if
                 } //End for in
                 console.log('--------------- END Capacitance File -------------------');
@@ -151,21 +185,22 @@ module.exports = function (netlist, capacitance, clk, constraints) {
         }); //End of readJson
     }; //End of parseCapacitanceFile
 
-    if (netlist != null && capacitance != null) {
-        _netlist = netlist;
+    if (netlist) {
+        _netlistFilename = netlist;
         var Netlist = this;
-        Netlist.parseNetlist(_netlist, function (err, graph) {
+        this.parseNetlist(_netlistFilename, function (err, graph) {
             if (err) {
                 console.error(err);
                 throw Error(err);
             } else {
-                Netlist.parseCapacitanceFile(capacitance, function (err) {
-                    if (err) {
-                        console.error(err);
-                        throw Error(err);
-                    } //End of if err
-                }); //End of parseCapacitanceFile
+                console.log('--------- Parsing ----------');
+                console.log(Netlist.getGraph());
+                console.log('--------- Parsed ----------');
             } //End of else
         }); //End of parseNetlist
+    } //End of if
+
+    if (constraint) {
+        _constraintFilename = constraint;
     } //End of if
 }; //End of module.exports
