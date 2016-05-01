@@ -13,33 +13,44 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     var _inout = [];
     var _inoutPorts = [];
 
-    var _points = [];
-    var _targets = [];
+    var _delayPoints = [];
+    var _delayTargets = [];
 
+    var _outputSlewPoints = [];
+    var _outputSlewTargets = [];
 
     var _tpd = Number.MIN_VALUE;
     var _tcd = Number.MAX_VALUE;
     var _size = 1;
-
     var _availableSizes = [];
 
-    var _setPointsTargets = function (pins) {
+    var _outputSlew;
+    var _inputSlew;
+    var _capacitanceLoad;
+
+    var _setOutputSlewPointsTargets = function (pins) {
         for (var i = 0; i < _outputPorts.length; i++) {
             for (var j = 0; j < _inputPorts.length; j++) {
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['points']);
+                _outputSlewTargets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['targets']);
+                _outputSlewPoints.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['points']);
 
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['rise_transition']['points']);
-
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['points']);
-
-                _targets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['targets']);
-                _points.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['points']);
+                _outputSlewTargets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['targets']);
+                _outputSlewPoints.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['fall_transition']['points']);
             } //End of for j
         } //End of for i
-    }; //End of _setPointsTargets
+    }; //End of _setOutputSlewPointsTargets
+
+    var _setDelayPointsTargets = function (pins) {
+        for (var i = 0; i < _outputPorts.length; i++) {
+            for (var j = 0; j < _inputPorts.length; j++) {
+                _delayTargets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['targets']);
+                _delayPoints.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_rise']['points']);
+
+                _delayTargets.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['targets']);
+                _delayPoints.push(pins[_outputPorts[i]]['timing'][_inputPorts[j]]['cell_fall']['points']);
+            } //End of for j
+        } //End of for i
+    }; //End of _setDelayPointsTargets
 
     var _setSize = function (size) {
         _size = size;
@@ -74,7 +85,8 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         _setInputOutputPorts(pins);
         _setAvailableSizes(cell["available_sizes"]);
         _setSize(cell["size"]);
-        _setPointsTargets(pins);
+        _setDelayPointsTargets(pins);
+        _setOutputSlewPointsTargets(pins);
     } else {
         // TODO: One by One assignment
     }
@@ -87,13 +99,21 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         return _name;
     }; //End of getName
 
-    this.getPoints = function () {
-        return _points;
-    }; //End of getPoints
+    this.getDelayPoints = function () {
+        return _delayPoints;
+    }; //End of getDelayPoints
 
-    this.getTargets = function () {
-        return _targets;
-    }; //End of getTargets
+    this.getDelayTargets = function () {
+        return _delayTargets;
+    }; //End of getDelayTargets
+
+    this.getOutputSlewPoints = function () {
+        return _outputSlewPoints;
+    }; //End of getOutputSlewPoints
+
+    this.getOutputSlewTargets = function () {
+        return _outputSlewTargets;
+    }; //End of getDelayTargets
 
     this.getInputs = function () {
         return _inputs;
@@ -119,6 +139,11 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         return _tcd;
     }; //End of this.getContaminationDelay
 
+
+    this.getOutputSlew = function () {
+        return _outputSlew;
+    }; //End of getOutputSlew
+
     this.setPropagationDelay = function (pd) {
         _tpd = pd;
     }; //End of this.setPropagationDelay
@@ -127,12 +152,38 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         _tcd = cd;
     }; //End of setContaminationDelay
 
+    this.setOutputSlew = function (slew) {
+        _outputSlew = Util.clone(slew);
+    }; //End of setOutputSlew
+
     this.getAvailableSizes = function () {
         return _availableSizes;
     }; //End of getAvailableSizes
 
-    this.connect = function (gate) {
+    this.setCapacitanceLoad = function (capacitanceLoad) {
+        _capacitanceLoad = Util.clone(capacitanceLoad);
+    }; //End of setCapacitanceLoad
 
-    }; //End of connect
+    this.getCapacitanceLoad = function () {
+        return _capacitanceLoad;
+    }; //End of getCapacitanceLoad
+
+    this.setInputSlew = function (inputSlew) {
+        _inputSlew = Util.clone(inputSlew);
+    }; //End of inputSlew
+
+    this.getInputSlew = function () {
+        return _inputSlew;
+    };
+
+    this.getDelay = function () {
+        return {
+            delay: {
+                tpd: this.getPropagationDelay(),
+                tcd: this.getContaminationDelay()
+            },
+            slew: this.getOutputSlew()
+        }; //End of return
+    }; //End of getDelay
 
 } //End of module.exports

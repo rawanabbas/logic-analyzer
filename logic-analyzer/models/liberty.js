@@ -17,14 +17,6 @@ module.exports = function (filename) {
         _filename = filename;
     } //End of if
 
-    var _setTechnology = function (tech) {
-        _technology = tech;
-    }; //End of _setTechnology
-
-    var _setCells = function (cells) {
-        _cells = Util.clone(cells);
-    }; //End of _setCells
-
     var _estimate = function (fitPoints, targets, point, cb) {
         var tps = new TPS();
         tps.compile(fitPoints, targets, function (err) {
@@ -67,17 +59,29 @@ module.exports = function (filename) {
         } //End of if
 
         var delays = [];
+        var slews = [];
 
-        var points = gate.getPoints();
-        var targets = gate.getTargets();
+        var delayPoints = gate.getDelayPoints();
+        var delayTargets = gate.getDelayTargets();
 
-        _getEstimation(0,  points, targets, [Number(inputTransition), Number(outputCapacitance)], delays, function (err, delay) {
+        var outputSlewPoints = gate.getOutputSlewPoints();
+        var outputSlewTargets = gate.getOutputSlewTargets();
+
+        _getEstimation(0,  delayPoints, delayTargets, [Number(inputTransition), Number(outputCapacitance)], delays, function (err, delay) {
             if (err) {
                 cb(err);
             } else {
                 gate.setPropagationDelay(delay.max);
                 gate.setContaminationDelay(delay.min);
-                cb(null, gate);
+
+                _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], slews, function (err, slew) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        gate.setOutputSlew(slew);
+                        cb(null, gate);
+                    } //End of else
+                }); //End of _getEstimation
             } //End of else
         }); //End of _getEstimation
     }; //End of _getGateDelay
@@ -96,16 +100,24 @@ module.exports = function (filename) {
         var setupPoints = flipflop.getSetupPoints();
         var setupTargets = flipflop.getSetupTargets();
 
+        var outputSlewPoints = flipflop.getOutputSlewPoints();
+        var outputSlewTargets = flipflop.getOutputSlewTargets();
 
         var tcqPoints = flipflop.getTcqPoints();
         var tcqTargets = flipflop.getTcqTargets();
-        console.log("------------------ TCQ Points ------------------------");
-        console.log(tcqPoints);
-        console.log("--------------- END TCQ Points ------------------------");
+
         var holdDelays = [];
         var setupDelays = [];
         var tcqDelays = [];
-
+        var outputSlew = [];
+        console.log('-------------- Output Slew --------------');
+        console.log('============== Slew Points ==============');
+        console.log(outputSlewPoints);
+        console.log('=========== END Output Points ===========');
+        console.log('*************  Slew Targets *************');
+        console.log(outputSlewTargets);
+        console.log('************ END Output Points ************');
+        console.log('----------- END Output Slew -------------');
         //Get hold and setup times
         _getEstimation(0, holdPoints, holdTargets, [Number(inputTransition), Number(outputCapacitance)], holdDelays, function (err, hold) {
             if (err) {
@@ -122,7 +134,14 @@ module.exports = function (filename) {
                                 cb(err);
                             } else {
                                 flipflop.setTCQ(tcq);
-                                cb(null, flipflop);
+                                _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], outputSlew, function (err, slew) {
+                                    if (err) {
+                                        cb(err);
+                                    } else {
+                                        flipflop.setOutputSlew(slew);
+                                        cb(null, flipflop);
+                                    } //End of else
+                                }); //End of _getEstimation
                             } //End of else
                         }); //End of _getEstimation
                     } //End of else

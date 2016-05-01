@@ -14,49 +14,33 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
 
     var _edge;
 
-    var _tcq = {
-        max: Number.MIN_VALUE,
-        min: Number.MAX_VALUE
-    };
-    var _setup = {
-        max: Number.MIN_VALUE,
-        min: Number.MAX_VALUE
-    };
-    var _hold = {
-        max: Number.MIN_VALUE,
-        min: Number.MAX_VALUE
-    };
+    var _tcq;
+    var _setup;
+    var _hold;
 
     var _holdPoints = [];
     var _setupPoints = [];
     var _tcqPoints = [];
+    var _outputSlewPoints = [];
 
     var _holdTargets = [];
     var _setupTargets = [];
     var _tcqTargets = [];
+    var _outputSlewTargets = [];
 
-    var _inputSlew = {
-        max: Number.MIN_VALUE,
-        min: Number.MAX_VALUE
-    };
+    var _inputSlew;
+    var _outputSlew;
+    var _capacitanceLoad;
 
-    var _capacitanceLoad = {
-        max: Number.MIN_VALUE,
-        min: Number.MAX_VALUE
-    };
-
-    var _outputSlew = {
-        max: Number.MIN_VALUE,
-        min: Number.MAX_VALUE
-    };
 
     var _setClock = function (clk) {
         _clk = clk;
     }; //End of _setClock
 
     var _setEdge = function (edge) {
-        _edge = (edge == "CLK") ? "posedge" : "neg";
+        _edge = (edge == "CLK") ? "posedge" : "negedge";
     }; //End of _setEdge
+
 
     var _setPins = function (pins) {
         var keys = Object.keys(pins);
@@ -75,6 +59,14 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         } //End of for
     }; //End of _setPins
 
+    var _setOutputSlewPointsTargets = function (slew) {
+        _outputSlewPoints.push(slew["rise_transition"]["points"]);
+        _outputSlewPoints.push(slew["fall_transition"]["points"]);
+
+        _outputSlewTargets.push(slew["rise_transition"]["targets"]);
+        _outputSlewTargets.push(slew["fall_transition"]["targets"]);
+    }; //End of _setOutputSlewPointsTargets
+
     var _setHoldPointsTargets = function (hold) {
         _holdPoints.push(hold["rise_constraint"]["points"]);
         _holdPoints.push(hold["fall_constraint"]["points"]);
@@ -92,18 +84,11 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     }; //End of _setSetupPointsTargets
 
     var _setTcqPointsTargets = function (tcq) {
-
         _tcqPoints.push(tcq["cell_rise"]["points"]);
-        _tcqPoints.push(tcq["rise_transition"]["points"]);
-
         _tcqPoints.push(tcq["cell_fall"]["points"]);
-        _tcqPoints.push(tcq["fall_transition"]["points"]);
 
         _tcqTargets.push(tcq["cell_rise"]["targets"]);
-        _tcqTargets.push(tcq["rise_transition"]["targets"]);
-
         _tcqTargets.push(tcq["cell_fall"]["targets"]);
-        _tcqTargets.push(tcq["fall_transition"]["targets"]);
     }; //End of _setTcqPointsTargets
 
     if (cell != null) {
@@ -112,6 +97,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         _setHoldPointsTargets(cell["hold_rising"] || cell["hold_falling"]);
         _setSetupPointsTargets(cell["setup_rising"] || cell["setup_falling"]);
         _setTcqPointsTargets(cell["pins"]["Q"]["timing"]["CLK"]);
+        _setOutputSlewPointsTargets(cell["pins"]["Q"]["timing"]["CLK"]);
     } else {
         // TODO: Handle arguments passed one by one
     }
@@ -215,5 +201,22 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     this.getOutputSlew = function () {
         return _outputSlew;
     }; //End of getOutputSlew
+
+    this.getOutputSlewPoints = function () {
+        return _outputSlewPoints;
+    }; //End of getOutputSlewPoints
+
+    this.getOutputSlewTargets = function () {
+        return _outputSlewTargets;
+    }; //End of getDelayTargets
+
+    this.getDelay = function () {
+        return {
+            tcq: this.getTCQ(),
+            setup: this.getSetupTime(),
+            hold: this.getHoldTime(),
+            slew: this.getOutputSlew()
+        }; //End of return
+    }; //End of getDelay
 
 }; //End of module.exports.FlipFlop
