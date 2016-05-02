@@ -4,6 +4,8 @@ var Util = require('./utility');
 
 module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
 
+    var _name;
+
     var _clk;
 
     var _inputs = [];
@@ -31,6 +33,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     var _inputSlew;
     var _outputSlew;
     var _capacitanceLoad;
+    var _inputPinCapacitance;
 
 
     var _setClock = function (clk) {
@@ -166,6 +169,14 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         return _tcqTargets;
     }; //End of getHoldPoints
 
+    this.getInstanceName = function () {
+        return _name;
+    }; //End of getInstanceName
+
+    this.setInstanceName = function (name) {
+        _name = name;
+    }; //End of setInstanceName
+
     this.setTCQ = function (tcq) {
         _tcq = Util.clone(tcq);
     }; //End of setTCQ
@@ -218,5 +229,14 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
             slew: this.getOutputSlew()
         }; //End of return
     }; //End of getDelay
+
+    this.getInputPinCapacitance = function () {
+        return _inputPinCapacitance;
+    }; //End of getInputPinCapacitance
+
+    this.setInputPinCapacitance = function (capacitance) {
+        _inputPinCapacitance = Util.clone(capacitance);
+    }; //End of setInputPinCapacitance
+
 
 }; //End of module.exports.FlipFlop

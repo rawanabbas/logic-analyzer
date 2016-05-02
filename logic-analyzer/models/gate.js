@@ -27,6 +27,7 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     var _outputSlew;
     var _inputSlew;
     var _capacitanceLoad;
+    var _inputPinCapacitance;
 
     var _setOutputSlewPointsTargets = function (pins) {
         for (var i = 0; i < _outputPorts.length; i++) {
@@ -91,13 +92,13 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         // TODO: One by One assignment
     }
 
-    this.setName = function (name) {
-        _name = name;
-    }; //End of setName
-
-    this.getName = function () {
+    this.getInstanceName = function () {
         return _name;
-    }; //End of getName
+    }; //End of getInstanceName
+
+    this.setInstanceName = function (name) {
+        _name = name;
+    }; //End of setInstanceName
 
     this.getDelayPoints = function () {
         return _delayPoints;
@@ -185,5 +186,13 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
             slew: this.getOutputSlew()
         }; //End of return
     }; //End of getDelay
+
+    this.getInputPinCapacitance = function () {
+        return _inputPinCapacitance;
+    }; //End of getInputPinCapacitance
+
+    this.setInputPinCapacitance = function (capacitance) {
+        _inputPinCapacitance = Util.clone(capacitance);
+    }; //End of setInputPinCapacitance
 
 } //End of module.exports

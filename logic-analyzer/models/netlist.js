@@ -15,8 +15,12 @@ var Constraint = require('./constraint');
 module.exports = function (netlist, constraint, capacitance, clk, constraints) {
     console.log('Inside Netlist.');
 
-    var _netlistFilename;
-    var _constraintFilename;
+    function Node(data) {
+        this.data = data;
+        this.next = [];
+    }
+
+    var _netlist;
     var _capacitance;
     var _ports;
     var _cells;
@@ -24,6 +28,7 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
     var _graph = new Graph({directed: true});
     var _liberty = new Liberty();
     var _constraints = new Constraint(constraint);
+    var _paths = {};
 
     var _getConstraints = function (filename) {
         _constraints.parseConstraint(filename);
@@ -31,6 +36,7 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
 
     var _setPortProperties = function (port, constraints) {
         // console.log(port);
+        _ports[port].instance_name = port;
         if (_isInput(port)) {
             _ports[port].input_delay  = constraints.getInputDelay(port);
             _ports[port].input_slew  = constraints.getInputSlew(port);
@@ -53,7 +59,7 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
                 } else {
                     var inputs = cell.getInputPorts();
                     var outputs = cell.getOutputPorts();
-
+                    cell.setInstanceName(keys[i]);
                     for (var j = 0; j < connectionKeys.length; j++) {
                         if (inputs.indexOf(connectionKeys[j]) > -1) {
                             // console.log('----Inputs-----');
@@ -118,11 +124,26 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         } //End of for
     }; //End of renameGraphNode
 
+    var _traverse = function (node) {
+        var cell = _graph.node(node);
+        var outEdges = _graph.outEdges(node);
+        _paths[node] = new Node(cell.instance_name || cell.getInstanceName());
+        console.log(cell.instance_name || cell.getInstanceName());
+
+        if (outEdges) {
+            for (var i = 0; i < outEdges.length; i++) {
+                _paths[node].next.push( _graph.node(outEdges[i]["w"]));
+                _traverse(outEdges[i]["w"]);
+            } //End of for
+            // nodePath.push(outEdges[outEdges.length - 1]["w"]);
+        } //End of if
+    }; //End of _traverse
+
     this.parseNetlist = function (netlist, cb) {
         if (netlist == null) {
             throw Error("File is not provided for parsing.");
         }
-        fs.readJson(_netlistFilename, function (err, data) {
+        fs.readJson(_netlist, function (err, data) {
             if (err) {
                 console.error("An error has occured while reading the netlist file.");
                 cb(err);
@@ -138,7 +159,6 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
                 for (var i = 0; i < portKeys.length; i++) {
 
                     var bits = _ports[portKeys[i]]['bits'];
-                    // _getConstraints(_constraintFilename);
                     _setPortProperties(portKeys[i], _constraints)
                     _graph.setNode(portKeys[i], _ports[portKeys[i]]);
 
@@ -156,9 +176,23 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
                     if (err) {
                         cb(err);
                     } else {
+                        console.log('-=--=-=-=-=-=-= Traversing =-=-=-=-=-=-=-');
+                        var inputs = _graph.sources();
+                        var outputs = _graph.sinks();
+                        for (var i = 0; i < inputs.length; i++) {
+                            _traverse(inputs[i]);
+                        }
+                        console.log('======================================================');
+                        console.log('                    PATHS                             ');
+                        console.log('======================================================');
+                        console.log(_paths);
+                        console.log('======================================================');
+                        console.log('                    END PATHS                         ');
+                        console.log('======================================================');
+                        console.log('-=--=-=-=-=-=-= Traversed =-=-=-=-=-=-=-');
                         cb(null, _graph);
-                    }
-                });
+                    } //End of else
+                }); //End of _constructGraph
             } //End of else
         });//End of readJson
     }; //End of parseNetlist
@@ -176,7 +210,7 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
             } else {
                 for (var key in data) {
                     if (data.hasOwnProperty(key)) {
-                        // TODO:
+                        _graph.node(key)
                     } //End of if
                 } //End for in
                 console.log('--------------- END Capacitance File -------------------');
@@ -185,10 +219,14 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         }); //End of readJson
     }; //End of parseCapacitanceFile
 
+    this.getTimingPaths = function () {
+        return _paths;
+    }; //End of getTimingPaths
+
     if (netlist) {
-        _netlistFilename = netlist;
+        _netlist = netlist;
         var Netlist = this;
-        this.parseNetlist(_netlistFilename, function (err, graph) {
+        this.parseNetlist(_netlist, function (err, graph) {
             if (err) {
                 console.error(err);
                 throw Error(err);
@@ -198,9 +236,5 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
                 console.log('--------- Parsed ----------');
             } //End of else
         }); //End of parseNetlist
-    } //End of if
-
-    if (constraint) {
-        _constraintFilename = constraint;
     } //End of if
 }; //End of module.exports
