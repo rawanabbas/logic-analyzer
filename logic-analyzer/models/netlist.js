@@ -45,6 +45,12 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         } //End of else
     }; //End of _setPortProperties
 
+    var _setPortPinCapacitance = function (port, capacitance) {
+        if(!_isInput(port)) {
+            _ports[port].pin_capacitance = capacitance;
+        } //End of if
+    }; //End of _setPortPinCapacitance
+
     var _constructGraph = function (i, cb) {
         // console.log('Constructing Graph.....');
         var keys = Object.keys(_cells);
@@ -143,7 +149,7 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         if (netlist == null) {
             throw Error("File is not provided for parsing.");
         }
-        fs.readJson(_netlist, function (err, data) {
+        fs.readJson(netlist, function (err, data) {
             if (err) {
                 console.error("An error has occured while reading the netlist file.");
                 cb(err);
@@ -210,9 +216,25 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
             } else {
                 for (var key in data) {
                     if (data.hasOwnProperty(key)) {
-                        _graph.node(key)
+                        for (var cell in data[key]) {
+                            if (data[key].hasOwnProperty(cell)) {
+                                var node = _graph.node(cell);
+                                for (var port in data[key][cell]) {
+                                    if (data[key][cell].hasOwnProperty(port)) {
+                                        var capacitance = data[key][cell][port];
+                                        if (node instanceof Gate || node instanceof FlipFlop) {
+                                            if (node.getInputPinCapacitance() < capacitance) {
+                                                node.setInputPinCapacitance(capacitance);
+                                            } //End of if
+                                        } else if (cell.indexOf("output") > -1) {
+                                            _setPortPinCapacitance(Util.getPortName(cell), capacitance);
+                                        } //End of else
+                                    } //End of if
+                                } //End of for in port
+                            } //End of if
+                        } //End of for in cell
                     } //End of if
-                } //End for in
+                } //End for in key
                 console.log('--------------- END Capacitance File -------------------');
                 cb(null, data);
             } //End of else
@@ -223,18 +245,26 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         return _paths;
     }; //End of getTimingPaths
 
-    if (netlist) {
-        _netlist = netlist;
+    if (netlist && capacitance) {
+        // _netlist = netlist;
         var Netlist = this;
-        this.parseNetlist(_netlist, function (err, graph) {
+        this.parseNetlist(netlist, function (err, graph) {
             if (err) {
                 console.error(err);
                 throw Error(err);
             } else {
-                console.log('--------- Parsing ----------');
-                console.log(Netlist.getGraph());
-                console.log('--------- Parsed ----------');
+                Netlist.parseCapacitanceFile(capacitance, function (err, data) {
+                    if (err) {
+                        console.error(err);
+                        cb(err);
+                    } else {
+                        console.log('--------- Parsing ----------');
+                        console.log(Netlist.getGraph());
+                        console.log('--------- Parsed ----------');
+                    } //End of else
+                }); //End of parseCapacitanceFile
             } //End of else
         }); //End of parseNetlist
     } //End of if
+
 }; //End of module.exports

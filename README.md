@@ -3,7 +3,7 @@
 - [x] Task 1:
 	Reading	the	gate	level	net	list	(given	as	JSON),	identifying	the	timing	paths	and	creating
 a	DAG.	Output	the	identified	timing	paths. [30%].
-- [ ] Task	2:
+- [ ] Task	2: 
     Read	 the	library	 file (JSON),	read	 the	net	capacitances file	and	apply	 the	Critical	Path
 Method	(CPM) to	find	the	critical	path.	Output	the	identified	critical	path.	[40%]
 - [ ] Task	 3:

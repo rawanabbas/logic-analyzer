@@ -78,7 +78,17 @@ module.exports =  {
             } //End of for
             return min;
         } //End of if
-    } //End fo getMinimum
+    }, //End fo getMinimum
 
+    getPortName: function (port) {
+        var re = /___\w+_([a-zA-Z0-9]+)\[?\d?\]?/gmi;
+        var m;
+        while ((m = re.exec(port)) !== null) {
+            if (m.index === re.lastIndex) {
+                re.lastIndex++;
+            }
+            return m[1];
+        } //End of while
+    } //End of _isPort
 
 }; //End of module.exports

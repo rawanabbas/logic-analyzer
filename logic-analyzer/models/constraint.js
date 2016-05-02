@@ -14,21 +14,10 @@ module.exports = function (filename) {
         _clock = clk;
     };
 
-    var _getPortName = function (port) {
-        var re = /___\w+_([a-zA-Z0-9]+)\[?\d?\]?/gmi;
-        var m;
-        while ((m = re.exec(port)) !== null) {
-            if (m.index === re.lastIndex) {
-                re.lastIndex++;
-            }
-            return m[1];
-        } //End of while
-    }; //End of _isPort
-
     var _setInputSlews = function (slew) {
         for (var key in slew) {
             if (slew.hasOwnProperty(key)) {
-                _inputSlews[_getPortName(key)] = slew[key];
+                _inputSlews[Util.getPortName(key)] = slew[key];
             } //End of if
         } //End of for in
     }; //End of _setInputSlew
@@ -40,7 +29,7 @@ module.exports = function (filename) {
         for (var key in delays) {
             if (delays.hasOwnProperty(key)) {
                 console.log(key);
-                _inputDelays[_getPortName(key)] = delays[key];
+                _inputDelays[Util.getPortName(key)] = delays[key];
             } //End of if
         } //End of for in
         console.log('___________________END KEYS_____________________________');
@@ -55,7 +44,7 @@ module.exports = function (filename) {
     var _setCapacitanceLoad = function (capacitance) {
         for (var key in capacitance) {
             if (capacitance.hasOwnProperty(key)) {
-                _capacitanceLoads[_getPortName(key)] = capacitance[key];
+                _capacitanceLoads[Util.getPortName(key)] = capacitance[key];
             } //End of if
         } //End of for in
     }; //End of _setCapacitanceLoad
@@ -63,7 +52,7 @@ module.exports = function (filename) {
     var _setOutputDelays = function (delays) {
         for (var key in delays) {
             if (delays.hasOwnProperty(key)) {
-                _outputDelays[_getPortName(key)] = delays[key];
+                _outputDelays[Util.getPortName(key)] = delays[key];
             } //End of if
         } //End of for in
     }; //End of _setOutputDelays

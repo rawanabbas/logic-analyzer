@@ -33,7 +33,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     var _inputSlew;
     var _outputSlew;
     var _capacitanceLoad;
-    var _inputPinCapacitance;
+    var _inputPinCapacitance = NUMBER.MIN_VALUE;
 
 
     var _setClock = function (clk) {
@@ -235,7 +235,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     }; //End of getInputPinCapacitance
 
     this.setInputPinCapacitance = function (capacitance) {
-        _inputPinCapacitance = Util.clone(capacitance);
+        _inputPinCapacitance = capacitance;
     }; //End of setInputPinCapacitance
 
 

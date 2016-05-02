@@ -27,7 +27,7 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     var _outputSlew;
     var _inputSlew;
     var _capacitanceLoad;
-    var _inputPinCapacitance;
+    var _inputPinCapacitance = Number.MIN_VALUE;
 
     var _setOutputSlewPointsTargets = function (pins) {
         for (var i = 0; i < _outputPorts.length; i++) {
@@ -192,7 +192,7 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     }; //End of getInputPinCapacitance
 
     this.setInputPinCapacitance = function (capacitance) {
-        _inputPinCapacitance = Util.clone(capacitance);
+        _inputPinCapacitance = capacitance;
     }; //End of setInputPinCapacitance
 
 } //End of module.exports

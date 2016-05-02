@@ -39,7 +39,7 @@ router.get('/', function(req, res, next) {
     // var netlist = new Netlist("./uploads/test1.json", "./uploads/test1.cap.json");
     // res.status(200).json("Netlist and Capacitance file parsed!");
     console.log('Insise Get /');
-    var netlist = new Netlist('./uploads/test1.json', './uploads/test1.const.json');
+    var netlist = new Netlist('./uploads/test1.json', './uploads/test1.const.json', './uploads/test1.cap.json');
     // var graph = netlist.getGraph();
     // if (graph) {
     //     res.status(200).json(graph);
