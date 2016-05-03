@@ -1,8 +1,22 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    background-color: black;
+    padding: 50px;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+h1 {
+    color: white;
 }
 
 a {
-  color: #00B7FF;
+    color: #00B7FF;
+}
+
+.jumbotron {
+    border-radius: 1.5em;
+}
+
+.submit {
+    margin-left: 35em;
+    margin-top: 2em;
 }

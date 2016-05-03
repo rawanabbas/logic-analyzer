@@ -2,10 +2,30 @@
 <html>
   <head>
     <title><%= title %></title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link href="/stylesheets/fileinput.min.css" media="all" rel="stylesheet" type="text/css" />
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="/javascripts/fileinput.min.js"></script>
+
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+    <h1>Logic Analyzer</h1>
+    <div class="jumbotron upload-jumbotron">
+      <div class="container upload-container">
+          <% include flash_error.ejs %>
+          <form id="upload_form" action="/upload" enctype="multipart/form-data" method="post">
+              <label class="control-label upload-label">JSON Netlist</label>
+              <input id="netlist" type="file" class="file" name="netlist" required>
+              <label class="control-label upload-label">JSON Capacitance File</label>
+              <input id="capacitance" type="file" class="file" name="capacitance" required>
+              <label class="control-label upload-label">JSON Constraint File</label>
+              <input id="constraint" type="file" class="file" name="constraint" required>
+              <label class="control-label upload-label">JSON Clock</label>
+              <input id="clk" type="file" class="file" name="clk" required>
+              <input type="submit" value="Analyze!" class="btn btn-primary submit">
+          </form>
+        </div>
+    </div>
   </body>
 </html>
