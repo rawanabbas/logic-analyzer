@@ -28,7 +28,7 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
 
 
     var _outputSlew;
-    var _inputSlew = Number.MIN_VALUE;
+    var _inputSlew = 0;
     var _netCapacitance = 0;
     var _inputPinCapacitance = {};
 

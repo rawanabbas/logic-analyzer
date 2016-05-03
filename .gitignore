@@ -33,4 +33,4 @@ npm-debug.log
 uploads
 
 #Output files
-.o
+out.o

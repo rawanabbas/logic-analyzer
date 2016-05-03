@@ -84,16 +84,13 @@ module.exports = function (filename) {
 
     this.getInputSlew = function (port) {
         if (port) {
-            return _inputSlews[port];
+            return Math.max(_inputSlews[port].rise_transition, _inputSlews[port].fall_transition);
         } else {
             return _inputSlews;
         }
     }; //End of getInputSlews
 
     this.getInputDelay = function (port) {
-        // console.log("++++++++++++++ Input Delays ++++++++++++++");
-        // console.log(_inputDelays);
-        // console.log("+++++++++++ END Input Delays ++++++++++++++");
         if (port) {
             return _inputDelays[port];
         } else {
@@ -103,15 +100,6 @@ module.exports = function (filename) {
 
     this.getCapacitanceLoads = function (port) {
         if (port) {
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log(_capacitanceLoads[port]);
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
-            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
             return _capacitanceLoads[port];
         } else {
             return _capacitanceLoads;
