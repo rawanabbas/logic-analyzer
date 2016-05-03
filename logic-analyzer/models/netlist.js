@@ -2,6 +2,7 @@
 var fs = require('fs-extra');
 var Graphlib = require('graphlib');
 var Graph = Graphlib.Graph;
+var async = require('async');
 
 var Util = require('./utility');
 
@@ -12,7 +13,7 @@ var Clock = require('./clock');
 var Constraint = require('./constraint');
 
 
-module.exports = function (netlist, constraint, capacitance, clk, constraints) {
+module.exports = function (netlist, constraint, capacitance, clk, cb) {
     console.log('Inside Netlist.');
 
     function Node(data) {
@@ -152,11 +153,11 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
     var _traverseGraph = function (node, path) {
         var cell = _graph.node(node);
         var outEdges = _graph.outEdges(node);
-        path[node] = new Node(cell.instance_name || cell.getInstanceName());
+        path[node] = new Node(cell);
         // console.log(cell.instance_name || cell.getInstanceName());
         if (outEdges) {
             for (var i = 0; i < outEdges.length; i++) {
-                path[node].next.push( _graph.node(outEdges[i]["w"]));
+                path[node].next.push(new Node( _graph.node(outEdges[i]["w"])));
                 _traverseGraph(outEdges[i]["w"], path);
             } //End of for
             // nodePath.push(outEdges[outEdges.length - 1]["w"]);
@@ -251,135 +252,71 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         } //End of for
     }; //End of _setCapacitances
 
-    var _setOutputSlews = function (i, child, parentOutputSlew, cb) {
-        if (i < child.length) {
-            if (child[i] instanceof Gate || child[i] instanceof FlipFlop) {
-                // console.log(parentOutputSlew);
-                if (child[i].getInputSlew() < parentOutputSlew) {
-                    child[i].setInputSlew(parentOutputSlew);
-                } //End of if
-                _liberty.getCellOutputSlew(child[i], child[i].getInputSlew(), child[i].getOutputCapacitance(), function (err, data) {
-                    if (err) {
-                        console.error(err);
-                        throw Error(err);
-                    } else {
-                        _setOutputSlews(i+1, child, parentOutputSlew, cb);
-                    } //End of else
-                }); //End of getOutputSlew
-            } //End of if
-        } else {
-            cb();
-        } //End of else
-    }; //End of _setOutputSlews
 
-    var _setSlews = function (node, parent, cb) {
-        var cell = _graph.node(node);
-        var parentCell = _graph.node(parent);
-        var outEdges = _graph.outEdges(node);
-        if ((parentCell instanceof Gate || parentCell instanceof FlipFlop) && (cell instanceof Gate || cell instanceof FlipFlop)) {
-            if (cell.getInputSlew() < parentCell.getOutputSlew().max) {
-                cell.setInputSlew(parentCell.getOutputSlew().max);
-            } //End of if
-        } else if (cell instanceof Gate || cell instanceof FlipFlop) {
-            if (cell.getInputSlew() < parentCell.output_slew) {
-                cell.setInputSlew(parentCell.output_slew);
-            } //End of if
-        } //End of else
+    var _getOutputSlew = function (cell, inputSlew, capacitance, cb) {
+        console.log('_getOutputSlew()');
         if (cell instanceof Gate || cell instanceof FlipFlop) {
-            _liberty.getCellOutputSlew(cell, cell.getInputSlew(), cell.getOutputCapacitance(), function (err, data) {
+            _liberty.getCellOutputSlew(cell, inputSlew, capacitance, function (err, gate) {
                 if (err) {
                     cb(err);
                 } else {
-                    if (outEdges) {
-                        for (var i = 0; i < outEdges.length; i++) {
-                            _setSlews(outEdges[i]["w"], node, cb);
-                        } //End of for
-                    }
-        //             // console.log('Ports');
-        //             // for (var port in _paths) {
-        //             //     if (_paths.hasOwnProperty(port)) {
-        //             //         console.log(port);
-        //             //         var parent = _graph.node(port);
-        //             //         var parentOutputSlew;
-        //             //         if (parent instanceof Gate || parent instanceof FlipFlop) {
-        //             //             parentOutputSlew = parent.getOutputSlew();
-        //             //         } else {
-        //             //             parentOutputSlew = parent.output_slew;
-        //             //         }
-        //             //         var child = _paths[port].next;
-        //             //         _setOutputSlews(0, child, parentOutputSlew, cb);
-        //             // for (var i = 0; i < child.length; i++) {
-        //             //     if (child[i] instanceof Gate || child[i] instanceof FlipFlop) {
-        //             //         console.log(parentOutputSlew);
-        //             //         if (child[i].getInputSlew() < parentOutputSlew) {
-        //             //             child[i].setInputSlew(parentOutputSlew);
-        //             //         } //End of if
-        //             //         _liberty.getCellOutputSlew(child[i], child[i].getInputSlew(), child[i].getOutputCapacitance(), function (err, cb) {
-        //             //             console.log('Inside _liberty.getCellOutputSlew: ', child[i]);
-        //             //             if (err) {
-        //             //                 console.error(err);
-        //             //                 throw Error(err);
-        //             //             } //End of if
-        //             //         }); //End of getOutputSlew
-        //             //     } //End of if
-        //             // } //End of for
-        //             // } //End of if
-        //             // } //End of for
-                }
-            }); //End of getCellDelay
-        } else if (_isInput(node)) {
-            if (outEdges) {
-                for (var i = 0; i < outEdges.length; i++) {
-                    _setSlews(outEdges[i]["w"], node, cb);
-                } //End of for
-            } //End of if
+                    cb(null, gate);
+                } //End of else
+            }); //End of getOutputSlew
         } else {
-            cb();
-        } //End of else
-    }; //End of _setSlews
-
-    var _setInputSlews = function (node, parent) {
-        var cell = _graph.node(node);
-        var parentCell = _graph.node(parent);
-        if (cell instanceof Gate || cell instanceof FlipFlop) {
-            if (parentCell instanceof Gate || parentCell instanceof FlipFlop) {
-                if (cell.getInputSlew() < parentCell.getOutputSlew()) {
-                    cell.setInputSlew(parentCell.getOutputSlew());
-                }
-            } else {
-                if (cell.getInputSlew() < parentCell.output_slew) {
-                    cell.setInputSlew(parentCell.output_slew);
-                } //End of if
-            } //endof else
-        } //End of if
-        var outEdges = _graph.outEdges(node);
-        if (outEdges) {
-            for (var i = 0; i < outEdges.length; i++) {
-                _setInputSlews(outEdges[i]["w"], node);
-            } //End of for
-            // nodePath.push(outEdges[outEdges.length - 1]["w"]);
-        } //End of if
+            cb(null, cell);
+        }
     };
 
-    var _constructTimingGraph = function (cb) {
-        console.log('CALLBACK _constructTimingGraph()');
-        console.log(cb);
-        console.log('CALLBACK _constructTimingGraph');
+    var _getInputSlew = function (cell, parentOutputSlew, cb) {
+        console.log('_getInputSlew()');
+        if (cell instanceof Gate || cell instanceof FlipFlop) {
+            if (cell.getInputSlew() < parentOutputSlew) {
+                cell.setInputSlew(parentOutputSlew);
+            }
+            cb(null, cell);
+        } else {
+            cb(null, cell);
+        }
+    }; //End of _getInputSlew
+
+    var _setSlews = function (node, cb) {
+        var preorder = Graphlib.alg.preorder(_graph, node);
+        console.log(preorder);
+        async.eachSeries(preorder, function (cell, callback) {
+            var outEdges = _graph.outEdges(cell);
+            var node = _graph.node(cell);
+            var outputSlew;
+            if (node instanceof Gate || node instanceof FlipFlop) {
+                outputSlew = node.getOutputSlew().max;
+            } else {
+                outputSlew = node.output_slew;
+            }
+            async.each(outEdges, function (edge, next) {
+                _getInputSlew(_graph.node(edge["w"]), outputSlew,  function (err, data) {
+                    if (err) {
+                        next(err);
+                    } else {
+                        var inputSlew, capacitance;
+                        if (data instanceof Gate || data instanceof FlipFlop) {
+                            inputSlew = data.getInputSlew();
+                            capacitance = data.getOutputCapacitance();
+                        } else {
+                            inputSlew = data.input_slew;
+                            capacitance = data.capacitance_load;
+                        }
+                        _getOutputSlew(data, inputSlew, capacitance, next);
+                    } //End of else
+                }); //End of _getInputSlew
+            }, callback);
+        }, cb);
+    }; //End of _setSlews
+
+    var _modifiyGraph = function (cb) {
         _setCapacitances();
-        // var outputs = _graph.sinks();
-        // for (var i = 0; i < outputs.length; i++) {
-        //     _setOutputSlews(outputs[i], null, function () {
-        //         var inputs = _graph.sources();
-        //         for (var i = 0; i < inputs.length; i++) {
-        //             _setInputSlews(inputs[i]);
-        //         } //End of for
-        //     }); //End of _setOutputSlews
-        // } //End of for
         var inputs = _graph.sources();
-        for (var i = 0; i < inputs.length; i++) {
-            _setSlews(inputs[i], null, cb)
-        } //End of for
-    }; //End of _constructTimingGraph
+        _setSlews(inputs[0], cb);
+    }; //End of _modifiyGraph
 
     this.parseNetlist = function (netlist, cb) {
         if (netlist == null) {
@@ -464,33 +401,36 @@ module.exports = function (netlist, constraint, capacitance, clk, constraints) {
         this.parseNetlist(netlist, function (err, graph) {
             if (err) {
                 console.error(err);
-                throw Error(err);
+                cb(err);
             } else {
                 Netlist.parseCapacitanceFile(capacitance, function (err, data) {
                     if (err) {
                         console.error(err);
                         cb(err);
                     } else {
-                        _constructTimingGraph(function () {
-                            var nodes = _graph.nodes();
-                            console.log('************************ Timing Graph Slew ***********************************');
-                            for (var i = 0; i < nodes.length; i++) {
-                                var cell = _graph.node(nodes[i])
-                                if (cell instanceof Gate || cell instanceof FlipFlop) {
-                                    console.log(cell.getInstanceName());
-                                    console.log(cell.getInputSlew());
-                                    console.log(cell.getOutputSlew());
+                        _modifiyGraph(function (err) {
+                            if (err) {
+                                cb(err);
+                            } else {
+                                var nodes = _graph.nodes();
+                                console.log('************************ Timing Graph Slew ***********************************');
+                                for (var i = 0; i < nodes.length; i++) {
+                                    var cell = _graph.node(nodes[i])
+                                    if (cell instanceof Gate || cell instanceof FlipFlop) {
+                                        console.log(cell.getInstanceName());
+                                        console.log(cell.getInputSlew());
+                                        console.log(cell.getOutputSlew());
+                                    }
                                 }
+                                console.log('********************** END Timing Graph Slew *******************************');
+                                cb(null, _graph);
                             }
-                            console.log('********************** END Timing Graph Slew *******************************');
-                            }); //End if _constructTimingGraph
-                            // console.log('--------- Parsing ----------');
-                            // console.log(Netlist.getGraph());
-                            // console.log('--------- Parsed ----------');
-                        } //End of else
-                    }); //End of parseCapacitanceFile
-                } //End of else
-            }); //End of parseNetlist
-        } //End of if
+                        }); //End of _modifiyGraph
+                    }
+                }); //End of else
+            } //End of parseCapacitanceFile
+        }); //End of else
+    } //End of parseNetlist
+    // } //End of if
 
-    }; //End of module.exports
+}; //End of module.exports

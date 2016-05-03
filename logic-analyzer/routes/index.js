@@ -39,14 +39,32 @@ router.get('/', function(req, res, next) {
     // var netlist = new Netlist("./uploads/test1.json", "./uploads/test1.cap.json");
     // res.status(200).json("Netlist and Capacitance file parsed!");
     console.log('Insise Get /');
-    var netlist = new Netlist('./uploads/test1.json', './uploads/test1.const.json', './uploads/test1.cap.json');
+    var netlist = new Netlist('./uploads/test1.json', './uploads/test1.const.json', './uploads/test1.cap.json', './uploads/test1.clk.json', function (err, _graph) {
+        if (err) {
+            res.status(500).json(err);
+        } else {
+            var nodes = _graph.nodes();
+            console.log(nodes);
+            var json = {};
+            for (var i = 0; i < nodes.length; i++) {
+                var node = _graph.nodes(nodes[i]);
+                if (node instanceof Gate || node instanceof FlipFlop) {
+                    console.log(node);
+                    json[node] = {input_slew: node.getInputSlew(), output_slew: node.getOutputSlew().max, capacitance: node.getOutputCapacitance}
+                } else {
+                    json[node] = node;
+                }
+            }
+            res.status(200).json(json);
+        } //End of else
+    });
     // var graph = netlist.getGraph();
     // if (graph) {
     //     res.status(200).json(graph);
     // } else {
     //     res.status(500).json("something went wrong. :(")
     // } //End  of else
-    res.status(200).send("DONE!!")
+    // res.status(200).send("DONE!!")
 }); //End of get /
 
 module.exports = router;
