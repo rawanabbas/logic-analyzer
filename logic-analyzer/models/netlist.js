@@ -254,7 +254,6 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
 
 
     var _getOutputSlew = function (cell, inputSlew, capacitance, cb) {
-        console.log('_getOutputSlew()');
         if (cell instanceof Gate || cell instanceof FlipFlop) {
             _liberty.getCellOutputSlew(cell, inputSlew, capacitance, function (err, gate) {
                 if (err) {
@@ -269,7 +268,6 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
     };
 
     var _getInputSlew = function (cell, parentOutputSlew, cb) {
-        console.log('_getInputSlew()');
         if (cell instanceof Gate || cell instanceof FlipFlop) {
             if (cell.getInputSlew() < parentOutputSlew) {
                 cell.setInputSlew(parentOutputSlew);
@@ -355,16 +353,7 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
                     if (err) {
                         cb(err);
                     } else {
-                        console.log('-=--=-=-=-=-=-= Traversing =-=-=-=-=-=-=-');
                         _traverse();
-                        console.log('-=--=-=-=-=-=-= Traversed =-=-=-=-=-=-=-');
-                        console.log('======================================================');
-                        console.log('                    PATHS                             ');
-                        console.log('======================================================');
-                        console.log(_paths);
-                        console.log('======================================================');
-                        console.log('                    END PATHS                         ');
-                        console.log('======================================================');
                         cb(null, _graph);
                     } //End of else
                 }); //End of _constructGraph
@@ -377,16 +366,12 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
     }; //End fo getGraph
 
     this.parseCapacitanceFile = function (capacitance, cb) {
-        console.log('------------------ Capacitance File --------------------');
         fs.readJson(capacitance, function (err, data) {
             if (err) {
                 console.error(err);
                 cb(err);
             } else {
-                console.log('---------------- NET Capacitance File ------------------');
                 _setNetCapacitances(data);
-                console.log('------------- END NET Capacitance File -----------------');
-                console.log('--------------- END Capacitance File -------------------');
                 cb(null, data);
             } //End of else
         }); //End of readJson
@@ -412,17 +397,17 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
                             if (err) {
                                 cb(err);
                             } else {
-                                var nodes = _graph.nodes();
-                                console.log('************************ Timing Graph Slew ***********************************');
-                                for (var i = 0; i < nodes.length; i++) {
-                                    var cell = _graph.node(nodes[i])
-                                    if (cell instanceof Gate || cell instanceof FlipFlop) {
-                                        console.log(cell.getInstanceName());
-                                        console.log(cell.getInputSlew());
-                                        console.log(cell.getOutputSlew());
-                                    }
-                                }
-                                console.log('********************** END Timing Graph Slew *******************************');
+                                // var nodes = _graph.nodes();
+                                // console.log('************************ Timing Graph Slew ***********************************');
+                                // for (var i = 0; i < nodes.length; i++) {
+                                //     var cell = _graph.node(nodes[i])
+                                //     if (cell instanceof Gate || cell instanceof FlipFlop) {
+                                //         console.log(cell.getInstanceName());
+                                //         console.log(cell.getInputSlew());
+                                //         console.log(cell.getOutputSlew());
+                                //     }
+                                // }
+                                // console.log('********************** END Timing Graph Slew *******************************');
                                 cb(null, _graph);
                             }
                         }); //End of _modifiyGraph

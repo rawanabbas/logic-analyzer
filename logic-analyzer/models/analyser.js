@@ -10,48 +10,58 @@ var Netlist = require('./netlist');
 var Gate = require('./gate');
 var FlipFlop = require('./flipflop');
 
-module.exports = function (netlist, constraint, capacitance, clk) {
+module.exports = function (netlist, constraint, capacitance, clk, cb) {
 
     var _graph;
-    var _liberty;
+    var _liberty = new Liberty();
 
-    var _netlist = new Netlist(netlist, constraint, capacitance, function (err, graph) {
+    var Analyser = this;
+    var _netlist = new Netlist(netlist, constraint, capacitance, clk, function (err, graph) {
         if (err) {
             console.error(err);
-            throw Error(err);
+            cb(err);
         } else {
-            _graph = Util.clone(graph);
+            console.log('Netlist parsed!');
+            _graph = graph;
+            Analyser.analyze();
+            cb(null);
         } // End of else
     }); // End of new Netlist
 
     var _getCellDelay = function (node, cb) {
-        var cell = _graph.node(node);
-        _liberty.getCellDelay(cell, cell.getInputSlew(), cell.getCapacitanceLoads(), function (err, cell) {
-            if (err) {
-                cb(err);
-            } else {
-                cb(null, cell);
-            } //End of else
-        }); //End of getCellDelay
-    };
+        if (node instanceof Gate || node instanceof FlipFlop) {
+            _liberty.getCellDelay(node, node.getInputSlew(), node.getOutputCapacitance(), function (err, cell) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(null, cell);
+                } //End of else
+            }); //End of getCellDelay
+        } else {
+            cb(null, node);
+        } //End of else
+    }; //End of _getCellDelay
 
     var _constructTimingGraph = function (cb) {
         var nodes = _graph.nodes();
+        console.log(nodes);
         async.eachSeries(nodes, function (node, next) {
-            _getCellDelay(node, next);
-        }, cb); //End of asyn.each
+            _getCellDelay(_graph.node(node), function (err, cell) {
+                if (err) {
+                    next(err);
+                } else {
+                    console.log("_getCellDelay()");
+                    if (cell instanceof Gate || cell instanceof FlipFlop) {
+                        console.log(cell.getDelay());
+                    }
+                    next(null);
+                } //End of else
+            }); //End of _getCellDelay
+        }, cb); //End of async.each
     };//End of  _constructTimingGraph
 
     var _calculateArrivalTime = function () {
-        timing = _netlist.getTimingPaths();
-        paths = [];
-        for (var port in timing) {
-            if (timing.hasOwnProperty(port)) {
-                paths.push(timing[port].data);
-
-                paths.push('END');
-            } //End of if
-        } //End of for in
+        
     }; //End of _calculateArrivalTime
 
     var _calculateRequiredTime = function () {
@@ -62,13 +72,18 @@ module.exports = function (netlist, constraint, capacitance, clk) {
 
     };
 
+    var _printTimingPaths = function () {
+
+    };
+
     this.analyze = function () {
-        _constructTimingGraph();
-        _calculateArrivalTime();
-        _calculateRequiredTime()
-        _calculateSlack();
-        _calculateHoldViolation();
-        _calculateSetupViolation();
+        _constructTimingGraph(function () {
+            _calculateArrivalTime();
+            _calculateRequiredTime()
+            _calculateSlack();
+            // _calculateHoldViolation();
+            // _calculateSetupViolation();
+        });
     };
 
 };
