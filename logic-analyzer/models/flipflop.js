@@ -30,11 +30,11 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     var _tcqTargets = [];
     var _outputSlewTargets = [];
 
-    var _inputSlew;
+    var _inputSlew = Number.MIN_VALUE;
     var _outputSlew;
-    var _capacitanceLoad;
-    var _inputPinCapacitance = NUMBER.MIN_VALUE;
-
+    var _netCapacitance = 0;
+    var _inputPinCapacitance = {};
+    var _connectedNets = {};
 
     var _setClock = function (clk) {
         _clk = clk;
@@ -43,7 +43,6 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     var _setEdge = function (edge) {
         _edge = (edge == "CLK") ? "posedge" : "negedge";
     }; //End of _setEdge
-
 
     var _setPins = function (pins) {
         var keys = Object.keys(pins);
@@ -54,6 +53,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
                 if (pins[keys[i]]["direction"] == "input") {
                     _inputs.push(pins[keys[i]]);
                     _inputPorts.push(keys[i]);
+                    _inputPinCapacitance.keys[i] = pins[keys[i]]['capacitance'];
                 } else {
                     _outputs.push(pins[keys[i]]);
                     _outputPorts.push(keys[i]);
@@ -190,19 +190,19 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     }; //End of _setHold
 
     this.setInputSlew = function (inputSlew) {
-        _inputSlew = Util.clone(inputSlew);
+        _inputSlew = inputSlew;
     }; //End of inputSlew
 
     this.getInputSlew = function () {
         return _inputSlew;
     };
 
-    this.setCapacitanceLoad = function (capacitanceLoad) {
-        _capacitanceLoad = Util.clone(capacitanceLoad);
+    this.setNetCapacitance = function (netCapacitance) {
+        _netCapacitance = netCapacitance;
     }; //End of setCapacitanceLoad
 
-    this.getCapacitanceLoad = function () {
-        return _capacitanceLoad;
+    this.getNetCapacitance = function () {
+        return _netCapacitance;
     }; //End of getCapacitanceLoad
 
     this.setOutputSlew = function (outputSlew) {
@@ -230,13 +230,35 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         }; //End of return
     }; //End of getDelay
 
-    this.getInputPinCapacitance = function () {
+    this.getInputPinCapacitance = function (port) {
+        if (port) {
+            return _inputPinCapacitance.port;
+        }
         return _inputPinCapacitance;
     }; //End of getInputPinCapacitance
 
-    this.setInputPinCapacitance = function (capacitance) {
-        _inputPinCapacitance = capacitance;
+    this.setInputPinCapacitance = function (port, capacitance) {
+        _inputPinCapacitance[port] += capacitance;
     }; //End of setInputPinCapacitance
 
+    this.connect = function (port, net) {
+        var index = (_inputPorts.indexOf(port) > -1) ? _inputPorts.indexOf(port) : _outputPorts.indexOf(port);
+        if (_inputPorts.indexOf(port) > -1) {
+            _inputs[index]["net"] = [];
+            _inputs[index]["net"].push(net);
+        } else if (_outputPorts.indexOf(port) > -1) {
+            _outputs[index]["net"] = [];
+            _outputs[index]["net"].push(net);
+        } //End of else
+        _connectedNets[port] = net;
+    }; //End of connect
+
+    this.getConnectedNets = function (port) {
+        if (_inputs.indexOf(port)) {
+            return _inputs[port][net];
+        } else if (_outputs.indexOf(port)) {
+            return _outputs[port][net];
+        } //End of else
+    }; //End of getConnectedNets
 
 }; //End of module.exports.FlipFlop

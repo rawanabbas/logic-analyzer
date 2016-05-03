@@ -44,7 +44,7 @@ module.exports = function (filename) {
     var _setCapacitanceLoad = function (capacitance) {
         for (var key in capacitance) {
             if (capacitance.hasOwnProperty(key)) {
-                _capacitanceLoads[Util.getPortName(key)] = capacitance[key];
+                _capacitanceLoads[Util.getPortName(key)] = Math.max(capacitance[key].rise_capacitance, capacitance[key].fall_capacitance);
             } //End of if
         } //End of for in
     }; //End of _setCapacitanceLoad
@@ -103,6 +103,15 @@ module.exports = function (filename) {
 
     this.getCapacitanceLoads = function (port) {
         if (port) {
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log(_capacitanceLoads[port]);
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
+            console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-');
             return _capacitanceLoads[port];
         } else {
             return _capacitanceLoads;

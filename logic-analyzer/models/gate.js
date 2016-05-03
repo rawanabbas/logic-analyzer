@@ -23,11 +23,14 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     var _tcd = Number.MAX_VALUE;
     var _size = 1;
     var _availableSizes = [];
+    var _connectedNets = {};
+    var _connectedPorts = {};
+
 
     var _outputSlew;
-    var _inputSlew;
-    var _capacitanceLoad;
-    var _inputPinCapacitance = Number.MIN_VALUE;
+    var _inputSlew = Number.MIN_VALUE;
+    var _netCapacitance = 0;
+    var _inputPinCapacitance = {};
 
     var _setOutputSlewPointsTargets = function (pins) {
         for (var i = 0; i < _outputPorts.length; i++) {
@@ -71,12 +74,10 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
             if (direction == "input") {
                 _inputs.push(port);
                 _inputPorts.push(keys[i]);
+                _inputPinCapacitance[keys[i]] = port['capacitance'];
             } else if (direction == "output") {
                 _outputs.push(port);
                 _outputPorts.push(keys[i]);
-            } else {
-                _inout.push(port);
-                _inoutPorts.push(keys[i]);
             } //End of else
         } //End of for
     }; //End of _setInputOutputPorts
@@ -161,21 +162,21 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         return _availableSizes;
     }; //End of getAvailableSizes
 
-    this.setCapacitanceLoad = function (capacitanceLoad) {
-        _capacitanceLoad = Util.clone(capacitanceLoad);
+    this.setNetCapacitance = function (netCapacitance) {
+        _netCapacitance = netCapacitance;
     }; //End of setCapacitanceLoad
 
-    this.getCapacitanceLoad = function () {
-        return _capacitanceLoad;
+    this.getNetCapacitance = function () {
+        return _netCapacitance;
     }; //End of getCapacitanceLoad
 
     this.setInputSlew = function (inputSlew) {
-        _inputSlew = Util.clone(inputSlew);
+        _inputSlew = inputSlew;
     }; //End of inputSlew
 
     this.getInputSlew = function () {
         return _inputSlew;
-    };
+    }; //End of getInputSlew
 
     this.getDelay = function () {
         return {
@@ -187,12 +188,60 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         }; //End of return
     }; //End of getDelay
 
-    this.getInputPinCapacitance = function () {
+    this.getInputPinCapacitance = function (port) {
+        if (port) {
+            return _inputPinCapacitance[port];
+        }
         return _inputPinCapacitance;
     }; //End of getInputPinCapacitance
 
-    this.setInputPinCapacitance = function (capacitance) {
-        _inputPinCapacitance = capacitance;
+    this.setInputPinCapacitance = function (port, capacitance) {
+        _inputPinCapacitance[port] += capacitance;
     }; //End of setInputPinCapacitance
 
-} //End of module.exports
+    this.connect = function (port, net) {
+        var index = (_inputPorts.indexOf(port) > -1) ? _inputPorts.indexOf(port) : _outputPorts.indexOf(port);
+        if (_inputPorts.indexOf(port) > -1) {
+            _inputs[index]["net"] = [];
+            _inputs[index]["net"].push(net);
+        } else if (_outputPorts.indexOf(port) > -1) {
+            _outputs[index]["net"] = [];
+            _outputs[index]["net"].push(net);
+        } //End of else
+        _connectedNets[net] = port;
+    }; //End of connect
+
+    this.getConnectedNets = function (port) {
+        // console.log(port);
+        if (port) {
+            return _connectedNets[port];
+        } else {
+            return _connectedNets;
+        } //End of else
+    }; //End of getConnectedNets
+
+    this.getConnectedPorts = function () {
+        return _connectedPorts;
+    };
+
+    this.setInputSlew = function (slew) {
+        _inputSlew = slew;
+    }; //End of setInputSlew
+
+    this.getInputSlew =  function () {
+        return _inputSlew
+    }; //End of getInputSlew
+
+    this.setOutputCapacitance = function (capacitance) {
+        console.log('Cap: ', capacitance);
+        if (_netCapacitance < capacitance) {
+            // console.log('It is greater.');
+            _netCapacitance = capacitance;
+        }
+    }; //End of setOutputCapacitance
+
+    this.getOutputCapacitance = function () {
+        return _netCapacitance;
+    }; //End of outputCapacitance
+
+}; //End of module.exports

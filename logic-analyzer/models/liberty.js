@@ -58,13 +58,9 @@ module.exports = function (filename) {
         } //End of if
 
         var delays = [];
-        var slews = [];
 
         var delayPoints = gate.getDelayPoints();
         var delayTargets = gate.getDelayTargets();
-
-        var outputSlewPoints = gate.getOutputSlewPoints();
-        var outputSlewTargets = gate.getOutputSlewTargets();
 
         _getEstimation(0,  delayPoints, delayTargets, [Number(inputTransition), Number(outputCapacitance)], delays, function (err, delay) {
             if (err) {
@@ -72,15 +68,7 @@ module.exports = function (filename) {
             } else {
                 gate.setPropagationDelay(delay.max);
                 gate.setContaminationDelay(delay.min);
-
-                _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], slews, function (err, slew) {
-                    if (err) {
-                        cb(err);
-                    } else {
-                        gate.setOutputSlew(slew);
-                        cb(null, gate);
-                    } //End of else
-                }); //End of _getEstimation
+                cb(null, gate);
             } //End of else
         }); //End of _getEstimation
     }; //End of _getGateDelay
@@ -99,24 +87,13 @@ module.exports = function (filename) {
         var setupPoints = flipflop.getSetupPoints();
         var setupTargets = flipflop.getSetupTargets();
 
-        var outputSlewPoints = flipflop.getOutputSlewPoints();
-        var outputSlewTargets = flipflop.getOutputSlewTargets();
-
         var tcqPoints = flipflop.getTcqPoints();
         var tcqTargets = flipflop.getTcqTargets();
 
         var holdDelays = [];
         var setupDelays = [];
         var tcqDelays = [];
-        var outputSlew = [];
-        console.log('-------------- Output Slew --------------');
-        console.log('============== Slew Points ==============');
-        console.log(outputSlewPoints);
-        console.log('=========== END Output Points ===========');
-        console.log('*************  Slew Targets *************');
-        console.log(outputSlewTargets);
-        console.log('************ END Output Points ************');
-        console.log('----------- END Output Slew -------------');
+
         //Get hold and setup times
         _getEstimation(0, holdPoints, holdTargets, [Number(inputTransition), Number(outputCapacitance)], holdDelays, function (err, hold) {
             if (err) {
@@ -133,14 +110,7 @@ module.exports = function (filename) {
                                 cb(err);
                             } else {
                                 flipflop.setTCQ(tcq);
-                                _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], outputSlew, function (err, slew) {
-                                    if (err) {
-                                        cb(err);
-                                    } else {
-                                        flipflop.setOutputSlew(slew);
-                                        cb(null, flipflop);
-                                    } //End of else
-                                }); //End of _getEstimation
+                                cb(null, flipflop);
                             } //End of else
                         }); //End of _getEstimation
                     } //End of else
@@ -148,6 +118,48 @@ module.exports = function (filename) {
             } //End ofelse
         }); //End of _getEstimation
     }; //End of _getFlipFlopDelay
+
+    var _getFlipFlopSlew = function (flipflop, inputTransition, outputCapacitance, cb) {
+
+        var outputSlew = [];
+        console.log('-------------- Output Slew --------------');
+        console.log('============== Slew Points ==============');
+        console.log(outputSlewPoints);
+        console.log('=========== END Output Points ===========');
+        console.log('*************  Slew Targets *************');
+        console.log(outputSlewTargets);
+        console.log('************ END Output Points ************');
+        console.log('----------- END Output Slew -------------');
+        var outputSlewPoints = flipflop.getOutputSlewPoints();
+        var outputSlewTargets = flipflop.getOutputSlewTargets();
+        _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], outputSlew, function (err, slew) {
+            if (err) {
+                cb(err);
+            } else {
+                flipflop.setOutputSlew(slew);
+                cb(null, flipflop);
+            } //End of else
+        }); //End of _getEstimation
+    }; //End of _getFlipFlopSlew
+
+    var _getGateSlew = function (gate, inputTransition, outputCapacitance, cb) {
+
+        var slews = [];
+
+        var outputSlewPoints = gate.getOutputSlewPoints();
+
+        var outputSlewTargets = gate.getOutputSlewTargets();
+
+        _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], slews, function (err, slew) {
+            if (err) {
+                cb(err);
+            } else {
+                gate.setOutputSlew(slew);
+                cb(null, gate);
+            } //End of else
+        }); //End of _getEstimation
+
+    }; //End of _getGateSlew
 
     this.getCellByName = function (cellType, inputs, outputs, size, cb) {
 
@@ -195,7 +207,7 @@ module.exports = function (filename) {
         }); //End of readJson
     }; //End of getCellByName
 
-    this.getCellDelay = function (cell, outputCapacitance, inputTransition, cb) {
+    this.getCellDelay = function (cell, inputTransition, outputCapacitance, cb) {
 
         if (cell == null || outputCapacitance == null || inputTransition == null) {
             cb({error: 'Either cell or outputCapacitance or inputTransition is not provided.'});
@@ -222,5 +234,32 @@ module.exports = function (filename) {
             }); //End of _getFlipFlopDelay
         } //End of else if
     }; //End of getCellDelay
+
+    this.getCellOutputSlew = function (cell, inputTransition,  outputCapacitance, cb) {
+        if (cell == null || outputCapacitance == null || inputTransition == null) {
+            cb({error: 'Either cell or outputCapacitance or inputTransition is not provided.'});
+        } else if (cell instanceof Gate) {
+            _getGateSlew(cell, inputTransition, outputCapacitance, function (err, gate) {
+                if (err) {
+                    console.error("----An error has occured------");
+                    console.error(err);
+                    cb(err);
+                } else {
+                    cb(null, gate);
+                } //End of else
+            }); //End of _getGateSlew
+
+        } else if (cell instanceof FlipFlop) {
+            _getFlipFlopSlew(cell, inputTransition, outputCapacitance, function (err, flipflop) {
+                if (err) {
+                    console.error("----An error has occured------");
+                    console.error(err);
+                    cb(err);
+                } else {
+                    cb(null, flipflop);
+                } //End of else
+            }); //End of _getFlipFlopSlew
+        } //End of else if
+    }; //End of getCellOutputSlew
 
 }; //End of module.exports
