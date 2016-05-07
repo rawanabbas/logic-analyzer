@@ -30,11 +30,16 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     var _tcqTargets = [];
     var _outputSlewTargets = [];
 
-    var _inputSlew = Number.MIN_VALUE;
+    var _inputSlew = 0;
+    var _clkSlew = 0;
     var _outputSlew;
     var _netCapacitance = 0;
     var _inputPinCapacitance = {};
+    var _connectedPorts = {};
     var _connectedNets = {};
+
+    var _arrivalTime = 0;
+    var _requiredTime = 0;
 
     var _setClock = function (clk) {
         _clk = clk;
@@ -53,7 +58,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
                 if (pins[keys[i]]["direction"] == "input") {
                     _inputs.push(pins[keys[i]]);
                     _inputPorts.push(keys[i]);
-                    _inputPinCapacitance.keys[i] = pins[keys[i]]['capacitance'];
+                    _inputPinCapacitance[keys[i]] = pins[keys[i]]['capacitance'];
                 } else {
                     _outputs.push(pins[keys[i]]);
                     _outputPorts.push(keys[i]);
@@ -213,6 +218,17 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
         return _outputSlew;
     }; //End of getOutputSlew
 
+
+    this.setClockSlew = function (clockSlew) {
+        if (_clkSlew < clockSlew) {
+            _clkSlew = clockSlew;
+        } //End of if
+    };
+
+    this.getClockSlew = function () {
+        return _clkSlew
+    }; //End of getClockSlew
+
     this.getOutputSlewPoints = function () {
         return _outputSlewPoints;
     }; //End of getOutputSlewPoints
@@ -254,11 +270,51 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     }; //End of connect
 
     this.getConnectedNets = function (port) {
-        if (_inputs.indexOf(port)) {
-            return _inputs[port][net];
-        } else if (_outputs.indexOf(port)) {
-            return _outputs[port][net];
+        // console.log(port);
+        if (port) {
+            return _connectedNets[port];
+        } else {
+            return _connectedNets;
         } //End of else
     }; //End of getConnectedNets
+
+    this.getConnectedPorts = function () {
+        return _connectedPorts;
+    };
+
+    this.setInputSlew = function (slew) {
+        _inputSlew = slew;
+    }; //End of setInputSlew
+
+    this.getInputSlew =  function () {
+        return _inputSlew
+    }; //End of getInputSlew
+
+    this.setOutputCapacitance = function (capacitance) {
+        console.log('Cap: ', capacitance);
+        if (_netCapacitance < capacitance) {
+            _netCapacitance = capacitance;
+        }
+    }; //End of setOutputCapacitance
+
+    this.getOutputCapacitance = function () {
+        return _netCapacitance;
+    }; //End of outputCapacitance
+
+    this.getAAT = function () {
+        return _arrivalTime;
+    };
+
+    this.setAAT = function (aat) {
+        _arrivalTime += aat;
+    };
+
+    this.getRAT = function () {
+        return _requiredTime;
+    };
+
+    this.setRAT = function (rat) {
+        _requiredTime -= rat;
+    };
 
 }; //End of module.exports.FlipFlop

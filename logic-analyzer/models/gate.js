@@ -32,6 +32,9 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     var _netCapacitance = 0;
     var _inputPinCapacitance = {};
 
+    var _arrivalTime = 0;
+    var _requiredTime = 0;
+
     var _setOutputSlewPointsTargets = function (pins) {
         for (var i = 0; i < _outputPorts.length; i++) {
             for (var j = 0; j < _inputPorts.length; j++) {
@@ -235,13 +238,27 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     this.setOutputCapacitance = function (capacitance) {
         console.log('Cap: ', capacitance);
         if (_netCapacitance < capacitance) {
-            // console.log('It is greater.');
             _netCapacitance = capacitance;
-        }
+        } //End of if
     }; //End of setOutputCapacitance
 
     this.getOutputCapacitance = function () {
         return _netCapacitance;
     }; //End of outputCapacitance
 
+    this.getAAT = function () {
+        return _arrivalTime;
+    };
+
+    this.setAAT = function (aat) {
+        _arrivalTime += aat;
+    };
+
+    this.getRAT = function () {
+        return _requiredTime;
+    };
+
+    this.setRAT = function (rat) {
+        _requiredTime -= rat;
+    };
 }; //End of module.exports

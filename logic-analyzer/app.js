@@ -6,6 +6,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var flash  = require('connect-flash');
 var session  = require('express-session');
+var multer = require('multer');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
@@ -25,6 +26,31 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({secret: 'Sdfe3rf87qwf4setedAFegfge7', name: 'LogicAnalyser', saveUninitialized: true, resave: true}));
 app.use(flash());
+
+
+app.use(multer({
+    dest:                 './uploads/',
+    limit:                {
+                            fileSize: 4000000
+                          },
+    onFileSizeLimit:      function (file) {
+                            console.log('File has exceeded the size limit. ' + file.filseSize + ' bytes');
+                          },
+    rename:               function (fieldName, filename) {
+                            return filename + Date.now() + '_' + ('' + Math.random()).split('.')[1];
+                          },
+    onFileUploadStart:    function (file, req, res) {
+                            console.log(file.originalname + ' is uploading....');
+                          },
+    onFileUploadComplete: function (file) {
+                            console.log(file.fieldname + ' is uploaded.');
+                          },
+    onError:              function (error) {
+                            console.error(error);
+                          }
+  })
+);
+
 app.use('/', routes);
 app.use('/users', users);
 

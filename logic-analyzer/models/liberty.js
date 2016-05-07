@@ -2,6 +2,7 @@
 
 var fs = require('fs-extra');
 var TPS = require('../node_modules/thinplate/thinplate');
+var async = require('async');
 
 var  Util = require('./utility');
 var Gate = require('./gate');
@@ -80,58 +81,35 @@ module.exports = function (filename) {
         } //End of if
 
         //Points and targets for estimation
-
-        var holdPoints = flipflop.getHoldPoints();
-        var holdTargets = flipflop.getHoldTargets();
-
-        var setupPoints = flipflop.getSetupPoints();
-        var setupTargets = flipflop.getSetupTargets();
-
         var tcqPoints = flipflop.getTcqPoints();
         var tcqTargets = flipflop.getTcqTargets();
 
-        var holdDelays = [];
-        var setupDelays = [];
         var tcqDelays = [];
-
-        //Get hold and setup times
-        _getEstimation(0, holdPoints, holdTargets, [Number(inputTransition), Number(outputCapacitance)], holdDelays, function (err, hold) {
+        _getEstimation(0, tcqPoints, tcqTargets, [Number(inputTransition), Number(outputCapacitance)], tcqDelays, function (err, tcq) {
             if (err) {
                 cb(err);
             } else {
-                flipflop.setHold(hold);
-                _getEstimation(0, setupPoints, setupTargets, [Number(inputTransition), Number(outputCapacitance)], setupDelays, function (err, setup){
-                    if (err) {
-                        cb(err)
-                    } else {
-                        flipflop.setSetup(setup);
-                        _getEstimation(0, tcqPoints, tcqTargets, [Number(inputTransition), Number(outputCapacitance)], tcqDelays, function (err, tcq){
-                            if (err) {
-                                cb(err);
-                            } else {
-                                flipflop.setTCQ(tcq);
-                                cb(null, flipflop);
-                            } //End of else
-                        }); //End of _getEstimation
-                    } //End of else
-                }); //End of _getEstimation
-            } //End ofelse
+                flipflop.setTCQ(tcq);
+                cb(null, flipflop);
+            } //End of else
         }); //End of _getEstimation
     }; //End of _getFlipFlopDelay
 
     var _getFlipFlopSlew = function (flipflop, inputTransition, outputCapacitance, cb) {
 
         var outputSlew = [];
-        console.log('-------------- Output Slew --------------');
-        console.log('============== Slew Points ==============');
-        console.log(outputSlewPoints);
-        console.log('=========== END Output Points ===========');
-        console.log('*************  Slew Targets *************');
-        console.log(outputSlewTargets);
-        console.log('************ END Output Points ************');
-        console.log('----------- END Output Slew -------------');
         var outputSlewPoints = flipflop.getOutputSlewPoints();
         var outputSlewTargets = flipflop.getOutputSlewTargets();
+
+        // console.log('-------------- Output Slew --------------');
+        // console.log('============== Slew Points ==============');
+        // console.log(outputSlewPoints);
+        // console.log('=========== END Output Points ===========');
+        // console.log('*************  Slew Targets *************');
+        // console.log(outputSlewTargets);
+        // console.log('************ END Output Points ************');
+        // console.log('----------- END Output Slew -------------');
+
         _getEstimation(0, outputSlewPoints, outputSlewTargets, [Number(inputTransition), Number(outputCapacitance)], outputSlew, function (err, slew) {
             if (err) {
                 cb(err);
@@ -160,6 +138,33 @@ module.exports = function (filename) {
         }); //End of _getEstimation
 
     }; //End of _getGateSlew
+
+    var _getSetupHold = function (flipflop, inputSlew, clockSlew, cb) {
+        var holdPoints = flipflop.getHoldPoints();
+        var holdTargets = flipflop.getHoldTargets();
+
+        var setupPoints = flipflop.getSetupPoints();
+        var setupTargets = flipflop.getSetupTargets();
+
+        var holdDelays = [];
+        var setupDelays = [];
+
+        _getEstimation(0, setupPoints, setupTargets, [Number(inputSlew), Number(clockSlew)], setupDelays, function (err, data) {
+            if (err) {
+                cb(err);
+            } else {
+                flipflop.setSetup(data);
+                _getEstimation(0, holdPoints, holdTargets, [Number(inputSlew), Number(clockSlew)], holdDelays, function (err, data) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        flipflop.setHold(data);
+                        cb(null, cell);
+                    } //End of else
+                }); //Endof _getEstimation
+            } //End of else
+        }); //End of _getEstimation
+    }; //End of _getSetupHold
 
     this.getCellByName = function (cellType, inputs, outputs, size, cb) {
 
@@ -234,6 +239,20 @@ module.exports = function (filename) {
             }); //End of _getFlipFlopDelay
         } //End of else if
     }; //End of getCellDelay
+
+    this.getCellSetupHold = function (cell, inputSlew, clockSlew, cb) {
+        if (!cell instanceof FlipFlop || cell == null || outputCapacitance == null || inputTransition == null) {
+            cb({error: 'Either cell or outputCapacitance or inputTransition is not provided or of invalid type.'});
+        } else {
+            _getSetupHold(cell, inputSlew, outputCapacitance, function (err, flipflop) {
+                if (err) {
+                    cb(err);
+                } else {
+                    cb(null, flipflop);
+                } //End of if
+            }); //End of _getSetupHold
+        } //End of else
+    }; //End of getCellSetup
 
     this.getCellOutputSlew = function (cell, inputTransition,  outputCapacitance, cb) {
         if (cell == null || outputCapacitance == null || inputTransition == null) {

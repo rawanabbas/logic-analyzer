@@ -14,15 +14,15 @@
     <div class="jumbotron upload-jumbotron">
       <div class="container upload-container">
           <% include flash_error.ejs %>
-          <form id="upload_form" action="/upload" enctype="multipart/form-data" method="post">
+          <form id="upload_form" action="/" enctype="multipart/form-data" method="post">
               <label class="control-label upload-label">JSON Netlist</label>
-              <input id="netlist" type="file" class="file" name="netlist" required>
+              <input id="netlist" type="file" class="file" name="netlist">
               <label class="control-label upload-label">JSON Capacitance File</label>
-              <input id="capacitance" type="file" class="file" name="capacitance" required>
+              <input id="capacitance" type="file" class="file" name="capacitance">
               <label class="control-label upload-label">JSON Constraint File</label>
-              <input id="constraint" type="file" class="file" name="constraint" required>
+              <input id="constraint" type="file" class="file" name="constraint">
               <label class="control-label upload-label">JSON Clock</label>
-              <input id="clk" type="file" class="file" name="clk" required>
+              <input id="clk" type="file" class="file" name="clk">
               <input type="submit" value="Analyze!" class="btn btn-primary submit">
           </form>
         </div>

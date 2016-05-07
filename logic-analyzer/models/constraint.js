@@ -17,28 +17,29 @@ module.exports = function (filename) {
     var _setInputSlews = function (slew) {
         for (var key in slew) {
             if (slew.hasOwnProperty(key)) {
-                _inputSlews[Util.getPortName(key)] = slew[key];
-            } //End of if
-        } //End of for in
+                if (!_inputSlews[Util.getPortName(key)]) {
+                    _inputSlews[Util.getPortName(key)] = [];
+                }
+                _inputSlews[Util.getPortName(key)].push(slew[key]);
+            } //End of for in
+        }
     }; //End of _setInputSlew
 
     var _setInputDelays = function (delays) {
-        console.log('________________________________________________________');
-        console.log('                    INPUT DELAYS                       ');
-        console.log('_______________________KEYS_____________________________');
+        // for (var key in delays) {
+        //     if (delays.hasOwnProperty(key)) {
+        //         console.log(key);
+        //         _inputDelays[Util.getPortName(key)] = delays[key];
+        //     } //End of if
+        // } //End of for in
         for (var key in delays) {
             if (delays.hasOwnProperty(key)) {
-                console.log(key);
-                _inputDelays[Util.getPortName(key)] = delays[key];
+                if (!_inputDelays[Util.getPortName(key)]) {
+                    _inputDelays[Util.getPortName(key)] = [];
+                }
+                _inputDelays[Util.getPortName(key)].push(delays[key]);
             } //End of if
         } //End of for in
-        console.log('___________________END KEYS_____________________________');
-        console.log('_______________________VALUES___________________________');
-        console.log(_inputDelays);
-        console.log('____________________END VALUES__________________________');
-        console.log('________________________________________________________');
-        console.log('                   END INPUT DELAYS                     ');
-        console.log('________________________________________________________');
     }; //End of _setInputDelays
 
     var _setCapacitanceLoad = function (capacitance) {
@@ -52,7 +53,10 @@ module.exports = function (filename) {
     var _setOutputDelays = function (delays) {
         for (var key in delays) {
             if (delays.hasOwnProperty(key)) {
-                _outputDelays[Util.getPortName(key)] = delays[key];
+                if (!_outputDelays[Util.getPortName(key)]) {
+                    _outputDelays[Util.getPortName(key)] = [];
+                }
+                _outputDelays[Util.getPortName(key)].push(delays[key]);
             } //End of if
         } //End of for in
     }; //End of _setOutputDelays
@@ -84,7 +88,7 @@ module.exports = function (filename) {
 
     this.getInputSlew = function (port) {
         if (port) {
-            return Math.max(_inputSlews[port].rise_transition, _inputSlews[port].fall_transition);
+            return _inputSlews[port];
         } else {
             return _inputSlews;
         }
@@ -113,5 +117,9 @@ module.exports = function (filename) {
             return _outputDelays;
         } //End of else
     }; //End of getOutputDelay
+
+    this.getClock = function () {
+        return _clock;
+    };
 
 }; //End of module.exports

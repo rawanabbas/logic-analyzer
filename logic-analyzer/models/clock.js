@@ -3,10 +3,11 @@
 var Util = require('./utility');
 
 module.exports = function (filename) {
+    var _clkSkew;
     var _clk;
 
-    var _setClk = function (clk) {
-        _clk = Util.clone(clk);
+    var _setClkSkew = function (clk) {
+        _clkSkew = Util.clone(clk);
     }; //End of _setClk
 
     fs.readJson(filename, function (err, data) {
@@ -19,7 +20,15 @@ module.exports = function (filename) {
     }); //End of readJson
 
     this.getClockSkew = function (name) {
-        return _clk[name];
+        return _clkSkew[name];
     }; //End of getClockSkew
+
+    this.getClockPeriod = function () {
+        return _clk;
+    }; //End of getClockPeriod
+
+    this.setClockPeriod = function (clk) {
+        _clk = clk;
+    }; //End of setClockPeriod
 
 };
