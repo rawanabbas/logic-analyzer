@@ -4,7 +4,8 @@ var router = express.Router();
 var fs        = require('fs-extra');
 var path      = require('path');
 
-var Graph = require('graphlib').Graph;
+var Graphlib = require('graphlib');
+var Graph = Graphlib.Graph;
 var Liberty = require('../models/liberty');
 var Gate = require('../models/gate');
 var FlipFlop = require('../models/flipflop');
@@ -35,26 +36,41 @@ router.post('/', function (req, res, cb) {
     var constraintPath = req.files.constraint.path;
     var clkPath = req.files.clk.path;
 
-    var netlist = new Netlist(netlistPath, constraintPath, capacitancePath, clkPath, function (err, graph) {
+    var analyser = new Analyser(netlistPath, constraintPath, capacitancePath, clkPath, function (err, graph) {
         if (err) {
-            console.log(err);
-            req.flash('error', err);
-            unlinkAll();
+            res.status(500).json(err);
         } else {
             var json = {};
             var nodes = graph.nodes();
             for (var i = 0; i < nodes.length; i++) {
                 if (graph.node(nodes[i]) instanceof Gate || graph.node(nodes[i]) instanceof FlipFlop) {
-                    json[nodes[i]] = {input_slew: graph.node(nodes[i]).getInputSlew(), output_slew: graph.node(nodes[i]).getOutputSlew()};
-                    if (graph.node(nodes[i]) instanceof FlipFlop) {
-                        json[nodes[i]].clock_slew  = graph.node(nodes[i]).getClockSlew();
-                    } //End of if
+                    json[nodes[i]] = graph.node(nodes[i]).getDelay();
                 } //End of if
             } //End of for
-            unlinkAll();
             res.status(200).json(json);
         } //End of else
-    }); //End of netlist
+    }); //End of analyser
+
+    // var netlist = new Netlist(netlistPath, constraintPath, capacitancePath, clkPath, function (err, graph) {
+    //     if (err) {
+    //         console.log(err);
+    //         req.flash('error', err);
+    //         unlinkAll();
+    //     } else {
+    //         var json = {};
+    //         var nodes = graph.nodes();
+    //         for (var i = 0; i < nodes.length; i++) {
+    //             if (graph.node(nodes[i]) instanceof Gate || graph.node(nodes[i]) instanceof FlipFlop) {
+    //                 json[nodes[i]] = {input_slew: graph.node(nodes[i]).getInputSlew(), output_slew: graph.node(nodes[i]).getOutputSlew()};
+    //                 if (graph.node(nodes[i]) instanceof FlipFlop) {
+    //                     json[nodes[i]].clock_slew  = graph.node(nodes[i]).getClockSlew();
+    //                 } //End of if
+    //             } //End of if
+    //         } //End of for
+    //         unlinkAll();
+    //         res.status(200).json(json);
+    //     } //End of else
+    // }); //End of netlist
 
 }); //End of post /
 module.exports = router;

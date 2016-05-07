@@ -159,7 +159,7 @@ module.exports = function (filename) {
                         cb(err);
                     } else {
                         flipflop.setHold(data);
-                        cb(null, cell);
+                        cb(null, flipflop);
                     } //End of else
                 }); //Endof _getEstimation
             } //End of else
@@ -241,10 +241,10 @@ module.exports = function (filename) {
     }; //End of getCellDelay
 
     this.getCellSetupHold = function (cell, inputSlew, clockSlew, cb) {
-        if (!cell instanceof FlipFlop || cell == null || outputCapacitance == null || inputTransition == null) {
-            cb({error: 'Either cell or outputCapacitance or inputTransition is not provided or of invalid type.'});
+        if (!cell instanceof FlipFlop || cell == null || inputSlew == null || clockSlew == null) {
+            cb({error: 'Either cell or inputSlew or clockSlew is not provided or of invalid type.'});
         } else {
-            _getSetupHold(cell, inputSlew, outputCapacitance, function (err, flipflop) {
+            _getSetupHold(cell, inputSlew, clockSlew, function (err, flipflop) {
                 if (err) {
                     cb(err);
                 } else {

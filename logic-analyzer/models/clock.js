@@ -1,5 +1,6 @@
 'use strict';
 
+var fs = require('fs-extra');
 var Util = require('./utility');
 
 module.exports = function (filename) {
@@ -15,7 +16,7 @@ module.exports = function (filename) {
             console.error(err);
             throw Error("An error has occured whule parsing the clock skew file.");
         } else {
-            _setClk(data);
+            _setClkSkew(data);
         } //End of else
     }); //End of readJson
 

@@ -318,6 +318,7 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         } else if (node) {
             var bits = node.bits;
             var index = bits.indexOf(_graph.edge(parent, child));
+            console.log(node.output_slew);
             // console.log(_graph.edge(node, cell));
             // parentOutputSlew = Math.max(node.output_slew[index].fall_transition, node.output_slew[index].rise_transition) || Math.max(node.clock_slew[0].fall_transition, node.clock_slew[0].rise_transition);
             if (node.instance_name != "clk") {
@@ -332,7 +333,7 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         }
         console.log("parentOutputSlew: >>>>");
         console.log(parentOutputSlew);
-        if (cell instanceof Gate || cell instanceof FlipFlop) {
+        if (cell instanceof Gate || cell instanceof FlipFlop && node.instance_name != "clk") {
             if (cell.getInputSlew() < parentOutputSlew || cell.getInputSlew() < parentOutputSlew.max) {
                 if (parentOutputSlew.max) {
                     cell.setInputSlew(parentOutputSlew.max)
@@ -352,13 +353,12 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
     var _setSlews = function (node, cb) {
         var nodes = _graph.nodes();
         console.log('Inside _setSlews()');
-        // var inNode = _graph.sources();
-        // var nodes = Graphlib.alg.preorder(_graph, inNode[0]);
         console.log('========================================================================================');
         console.log('===================================SLEWS================================================');
         console.log('========================================================================================');
         console.log(nodes);
         console.log('========================================================================================');
+        console.log('====================================END=================================================');
         console.log('========================================================================================');
         async.eachSeries(nodes, function (cell, callback) {
             console.log(cell);
