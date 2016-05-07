@@ -40,13 +40,24 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         if (_isInput(port)) {
             if (_isClock(port)) {
                 _ports[port].clock_slew = constraints.getInputSlew(port);
+                _ports[port].slack  = 0;
             } else {
                 _ports[port].input_delay  = constraints.getInputDelay(port);
                 _ports[port].input_slew  = constraints.getInputSlew(port);
                 _ports[port].output_slew  = constraints.getInputSlew(port);
+                _ports[port].slack = 0;
             } //End of else
         } else {
             _ports[port].capacitance_load = constraints.getCapacitanceLoads(port);
+            _ports[port].output_delay = constraints.getOutputDelay(port);
+            _ports[port].rat = constraints.getOutputRAT(port);
+            console.log("******************************************************8");
+            console.log("******************************************************8");
+            console.log("******************************************************8");
+            console.log(constraints.getOutputRAT(port));
+            console.log("******************************************************8");
+            console.log("******************************************************8");
+            console.log("******************************************************8");
         } //End of else
     }; //End of _setPortProperties
 

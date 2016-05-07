@@ -118,6 +118,21 @@ module.exports = function (filename) {
         } //End of else
     }; //End of getOutputDelay
 
+    this.getOutputRAT = function (port) {
+        var min = _outputDelays[port][0]['cell_rise'];
+        for (var i = 0; i < _outputDelays[port].length; i++) {
+            for (var key in  _outputDelays[port][i]) {
+                if ( _outputDelays[port][i].hasOwnProperty(key)) {
+                    if (_outputDelays[port][i][key] < min) {
+                        min = _outputDelays[port][i][key];
+                    } //End of if
+                } //End of if
+            } //End of for in
+        } //End of for i
+        return min;
+        // return Util.getMaximum(_outputDelays[port], 'cell_rise', 'cell_fall');
+    }; //End of getOutputRAT
+
     this.getClock = function () {
         return _clock;
     };

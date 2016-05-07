@@ -33,7 +33,8 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     var _inputPinCapacitance = {};
 
     var _arrivalTime = 0;
-    var _requiredTime = 0;
+    var _requiredTime = Number.MAX_VALUE;
+    var _slack;
 
     var _setOutputSlewPointsTargets = function (pins) {
         for (var i = 0; i < _outputPorts.length; i++) {
@@ -251,7 +252,7 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     };
 
     this.setAAT = function (aat) {
-        _arrivalTime += aat;
+        _arrivalTime = aat;
     };
 
     this.getRAT = function () {
@@ -259,6 +260,14 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     };
 
     this.setRAT = function (rat) {
-        _requiredTime -= rat;
+        _requiredTime = rat;
+    };
+
+    this.getSlack = function () {
+        return _slack;
+    };
+
+    this.setSlack = function (slack) {
+        _slack = slack;
     };
 }; //End of module.exports

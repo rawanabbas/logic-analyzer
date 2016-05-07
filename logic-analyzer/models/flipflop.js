@@ -39,7 +39,8 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     var _connectedNets = {};
 
     var _arrivalTime = 0;
-    var _requiredTime = 0;
+    var _requiredTime = Number.MAX_VALUE;
+    var _slack;
 
     var _setClock = function (clk) {
         _clk = clk;
@@ -306,7 +307,7 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     };
 
     this.setAAT = function (aat) {
-        _arrivalTime += aat;
+        _arrivalTime = aat;
     };
 
     this.getRAT = function () {
@@ -314,7 +315,15 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     };
 
     this.setRAT = function (rat) {
-        _requiredTime -= rat;
+        _requiredTime = rat;
+    };
+
+    this.getSlack = function () {
+        return _slack;
+    };
+
+    this.setSlack = function (slack) {
+        return _slack = slack;
     };
 
 }; //End of module.exports.FlipFlop

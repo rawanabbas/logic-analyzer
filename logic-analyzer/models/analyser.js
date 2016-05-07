@@ -141,7 +141,11 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
                             if (cell.getAAT() < cellAAT) {
                                 cell.setAAT(cellAAT);
                             } //End of if
-                        } //End of else if
+                        } else {
+                            if (!cell.aat || cell.aat < aat) {
+                                cell.aat = aat;
+                            } //End of if
+                        } //End of else
                     } //End of else
                 } //End of for j
             } //End of if
@@ -149,14 +153,133 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
     }; //End of _calculateArrivalTime
 
     var _calculateRequiredTime = function () {
-
-    };
+        console.log('--------------------------------------------------------------------------');
+        console.log('Calculating Required Time...');
+        // var nodes = _graph.nodes();
+        var nodes = Graphlib.alg.topsort(_graph);
+        for (var i = nodes.length - 1; i >= 0; i--) {
+            console.log(nodes[i]);
+            var inEdges = _graph.inEdges(nodes[i]);
+            var rat;
+            var bits;
+            console.log("-======-=====-=======-");
+            console.log(_graph.node(nodes[i]).instance_name != "clk");
+            console.log(_graph.node(nodes[i]).instance_name);
+            console.log("-======-=====-=======-");
+            if (_graph.node(nodes[i]) instanceof Gate || _graph.node(nodes[i]) instanceof FlipFlop) {
+                rat = _graph.node(nodes[i]).getRAT();
+            } else if (_graph.node(nodes[i]).instance_name != "clk" && _graph.node(nodes[i]).instance_name) {
+                rat = _graph.node(nodes[i]).output_delay;
+                bits = _graph.node(nodes[i]).bits;
+                console.log(bits);
+            } else if (_graph.node(nodes[i]).instance_name == "clk") {
+                inEdges = null;
+            } //End of else if
+            console.log(rat);
+            console.log('InEdges......');
+            console.log(inEdges);
+            if (inEdges) {
+                for (var j = 0; j < inEdges.length; j++) {
+                    var cell = _graph.node(inEdges[j]["v"]);
+                    if (rat instanceof Array) {
+                        if (cell instanceof Gate || cell instanceof FlipFlop) {
+                            console.log(cell.getInstanceName());
+                            var index = bits.indexOf(_graph.edge(inEdges[j]));
+                            console.log(index);
+                            console.log(_graph.edge(inEdges[j]));
+                            console.log("RAT");
+                            console.log(rat);
+                            var parentRAT = Math.max(rat[index].cell_rise, rat[index].cell_fall);
+                            var cellRAT = parentRAT;
+                            console.log('ParentRAT');
+                            console.log(parentRAT);
+                            if (cell instanceof Gate) {
+                                console.log('Cell is am instanceof a Gate');
+                                cellRAT += cell.getDelay().delay.tcd;
+                                console.log(parentRAT);
+                                console.log(cellRAT);
+                                if (cell.getRAT() > cellRAT) {
+                                    cell.setRAT(cellRAT);
+                                }
+                            } else {
+                                console.log('Cell is an instanceof a FlipFlop');
+                                cellRAT += Math.min(cell.getDelay().tcq.min, cell.getDelay().hold.max);
+                                if (cell.getRAT() > cellRAT) {
+                                    cell.setRAT(cellRAT);
+                                }
+                            } //End of else
+                        } //End of if
+                    } else {
+                        console.log('RAT is not an array!');
+                        var cellRAT = rat;
+                        if (cell instanceof Gate) {
+                            console.log(cell.getInstanceName());
+                            console.log('It is a Gate');
+                            cellRAT += cell.getDelay().delay.tcd;
+                            console.log(cellRAT);
+                            if (cell.getRAT() > cellRAT) {
+                                cell.setRAT(cellRAT);
+                            } //End of if
+                        } else if (cell instanceof FlipFlop) {
+                            console.log(cell.getInstanceName());
+                            console.log('It is a FlipFlop');
+                            console.log(_clock.getClockSkew(cell.getInstanceName()));
+                            cellRAT += Math.min(cell.getDelay().tcq.min, _clock.getClockSkew(cell.getInstanceName()) + cell.getDelay().hold.max);
+                            if (cell.getRAT() > cellRAT) {
+                                cell.setRAT(cellRAT);
+                            } //End of if
+                        } else {
+                            if (!cell.rat || cell.rat < rat) {
+                                cell.rat = rat;
+                            } //End of if
+                        } //End of else
+                    } //End of else
+                } //End of for j
+            } //End of if
+        } //End of for
+    }; //End fo _calculateRequiredTime
 
     var _calculateSlack = function () {
+        _printARAT();
+        var nodes = _graph.nodes();
+        for (var i = 0; i < nodes.length; i++) {
+            if (_graph.node(nodes[i]) instanceof Gate || _graph.node(nodes[i]) instanceof FlipFlop) {
+                var aat = _graph.node(nodes[i]).getAAT();
+                var rat = _graph.node(nodes[i]).getRAT();
+                _graph.node(nodes[i]).setSlack(rat - aat);
+            } else {
+                var cell = _graph.node(nodes[i]);
+                var rat = cell.rat;
+                var aat = cell.aat;
+                console.log('Cell ', nodes[i], ' RAT: ', rat, ' AAT: ', aat);
+                if (typeof cell.slack === 'undefined') {
+                    cell.slack = rat - aat;
+                } //End of if
+            } //End of else
+        } //End of for i
+        _printSlack();
+    }; //End of_calculateSlack
+
+    var _printSlack = function () {
+        var nodes = _graph.nodes();
+        for (var i = 0; i < nodes.length; i++) {
+            if (_graph.node(nodes[i]) instanceof Gate || _graph.node(nodes[i]) instanceof FlipFlop) {
+                console.log('Cell ', nodes[i], ' Slack: ', _graph.node(nodes[i]).getSlack());
+            } else {
+                console.log('Cell ', nodes[i], 'Slack: ', _graph.node(nodes[i]).slack);
+            } //End of else
+        } //End of for
+    }; //End of _printSlack
+
+    var _printTimingPaths = function () {
 
     };
 
-    var _printTimingPaths = function () {
+    var _calculateHoldViolation = function () {
+
+    };
+
+    var _calculateSetupViolation = function () {
 
     };
 
@@ -178,7 +301,6 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         _constructTimingGraph(function () {
             _calculateArrivalTime();
             _calculateRequiredTime();
-            // _printARAT();
             _calculateSlack();
             // _calculateHoldViolation();
             // _calculateSetupViolation();
