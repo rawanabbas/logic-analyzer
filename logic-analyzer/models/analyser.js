@@ -275,12 +275,54 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
 
     };
 
-    var _calculateHoldViolation = function () {
+    var _getFlipFlops = function () {
+        var flipflops = [];
+        var nodes = _graph.nodes();
+        for (var i = 0; i < nodes.length; i++) {
+            if (_graph.node(nodes[i]) instanceof FlipFlop) {
+                flipflops.push(_graph.node(nodes[i]));
+            } //End of if
+        } //End of for i
+        return flipflops;
+    }; //End of _getFlipFlops
 
-    };
+    var _calculateHoldViolation = function () {
+        var flipflops = Util.clone(_getFlipFlops());
+        var holds = {};
+        for (var i = 0; i < flipflops.length; i++) {
+            if (flipflops[i].getAAT() < Math.abs(flipflops[i].getHoldTime().max)) {
+                holds[flipflops[i]] = flipflops[i].getAAT() - flipflops[i].getHoldTime().max;
+            }
+            // var inEdges = _graph.inEdges(flipflops[i].getInstanceName());
+            // for (var j = 0; j < inEdges.length; j++) {
+            //     var cell = _graph.node(inEdges[j]["v"]);
+            //     if (cell instanceof Gate) {
+            //         if (cell.getAAT() < flipflops[i].getHoldTime().max) {
+            //             holds[flipflops[i]] = cell.getAAT() - flipflops[i].getHoldTime().max;
+            //         } //End of if
+            //     } else {
+            //         if (cell.aat < flipflops[i].getHoldTime().max) {
+            //             holds[flipflops[i].getInstanceName()] = cell.getAAT() - flipflops[i].getHoldTime().max;
+            //         } //End of if
+            //     } //End of if
+            // } //End of for j
+        } //End of for
+        console.log('HOLD VIOLATIONS');
+        console.log(holds);
+        return holds;
+    }; //End of _calculateHoldViolation
 
     var _calculateSetupViolation = function () {
-
+        var cycle = _constraints.getClock();
+        var flipflops = Util.clone(_getFlipFlops());
+        var setups = {};
+        for (var i = 0; i < flipflops.length; i++) {
+            if (flipflops[i].getAAT() > Math.abs(cycle - flipflops[i].getSlack())) {
+                setups[flipflops[i]] = cycle - flipflops[i].getSlack();
+            }
+        } //End of for
+        console.log('SETUP VIOLATIONS');
+        console.log(setups);
     };
 
     var _printARAT = function () {
@@ -297,13 +339,17 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         } //End of for i
     }; //End of _printARAT
 
+    this.generateTimingReport = function () {
+
+    };
+
     this.analyze = function () {
         _constructTimingGraph(function () {
             _calculateArrivalTime();
             _calculateRequiredTime();
             _calculateSlack();
-            // _calculateHoldViolation();
-            // _calculateSetupViolation();
+            _calculateHoldViolation();
+            _calculateSetupViolation();
         });
     };
 
