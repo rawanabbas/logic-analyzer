@@ -325,6 +325,101 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         console.log(setups);
     };
 
+    var _getInputToFlipFlop = function () {
+        function weight(e) {
+            return _graph.edge(e);
+        }
+        console.log("Input -> FlipFlop");
+        var flipflops = Util.clone(_getFlipFlops());
+        var paths = {};
+        var inputs = _graph.sources();
+        for (var i = 0; i < flipflops.length; i++) {
+            paths[flipflops[i].getInstanceName()] = [];
+            for (var j = 0; j < inputs.length; j++) {
+                if (_graph.node(inputs[j]).instance_name != "clk") {
+                    var dijkstra = Graphlib.alg.dijkstra(_graph, inputs[j], weight);
+                    var distance = dijkstra[flipflops[i].getInstanceName()].distance;
+                    var predecessor = flipflops[i].getInstanceName();
+                    while (distance > 0) {
+                        predecessor = dijkstra[predecessor].predecessor;
+                        if (dijkstra[predecessor]) {
+                            distance = dijkstra[predecessor].distance;
+                        } else {
+                            distance = -1;
+                        }
+                        paths[flipflops[i].getInstanceName()].push(predecessor);
+                    } //End of while
+                } //End of if
+            } //End of for j
+        } //End of for i
+        console.log(paths);
+    }; //End of _getInputToFlipFlop
+
+    var _getFlipFlopToFlipFlop = function () {
+        console.log("FlipFlop -> FlipFlop");
+        function weight(e) {
+            return _graph.edge(e);
+        }
+        var flipflops = Util.clone(_getFlipFlops());
+        var paths = {};
+        for (var i = 0; i < flipflops.length; i++) {
+            paths[flipflops[i].getInstanceName()] = [];
+            for (var j = 0; j < flipflops.length; j++) {
+                if (flipflops[i].getInstanceName() != flipflops[j].getInstanceName()) {
+                    console.log('---------------');
+                    console.log(flipflops[i].getInstanceName());
+                    console.log(flipflops[j].getInstanceName());
+                    console.log('---------------');
+                    var dijkstra = Graphlib.alg.dijkstraAll(_graph, weight);
+                    // console.log(dijkstra);
+                    var distance = dijkstra[flipflops[i].getInstanceName()][flipflops[j].getInstanceName()].distance;
+                    if (dijkstra[flipflops[i].getInstanceName()][flipflops[j].getInstanceName()].predecessor) {
+                        paths[flipflops[i].getInstanceName()].push(flipflops[j].getInstanceName());
+                        var predecessor = dijkstra[flipflops[i].getInstanceName()][flipflops[j].getInstanceName()].predecessor;
+                        while (distance >  0) {
+                            paths[flipflops[i].getInstanceName()].push(predecessor);
+                            predecessor = dijkstra[flipflops[i].getInstanceName()][predecessor].predecessor;
+                            // console.log(predecessor);
+                            distance =  dijkstra[flipflops[i].getInstanceName()][predecessor].distance;
+                        }
+                    }
+                } //End of if
+            } //End of for j
+        } //End of for i
+        console.log(paths);
+    }; //End of _getFlipFlopToFlipFlop
+
+    var _getFlipFlopToOutput = function () {
+        console.log('FlipFlop -> Output');
+        function weight(e) {
+            return _graph.edge(e);
+        }
+        var flipflops = Util.clone(_getFlipFlops());
+        var paths = {};
+        var outputs = _graph.sinks();
+        for (var i = 0; i < flipflops.length; i++) {
+            paths[flipflops[i].getInstanceName()] = [];
+            for (var j = 0; j < outputs.length; j++) {
+                var dijkstra = Graphlib.alg.dijkstraAll(_graph, weight);
+                // console.log(dijkstra);
+                var distance = dijkstra[flipflops[i].getInstanceName()][outputs[j]].distance;
+                if (dijkstra[flipflops[i].getInstanceName()][outputs[j]].predecessor) {
+                    paths[flipflops[i].getInstanceName()].push(outputs[j]);
+                    var predecessor = dijkstra[flipflops[i].getInstanceName()][outputs[j]].predecessor;
+                    while (distance >  0) {
+                        paths[flipflops[i].getInstanceName()].push(predecessor);
+                        predecessor = dijkstra[flipflops[i].getInstanceName()][predecessor].predecessor;
+                        // console.log(predecessor);
+                        distance =  dijkstra[flipflops[i].getInstanceName()][predecessor].distance;
+                    }
+                }
+            } //End of if
+
+            // } //End of for j
+        } //End of for i
+        console.log(paths);
+    }; //End of _getFlipFlopToOutput
+
     var _printARAT = function () {
         var nodes = _graph.nodes();
         for (var i = 0; i < nodes.length; i++) {
@@ -343,13 +438,21 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
 
     };
 
+    this.getTimingPaths = function () {
+        _getInputToFlipFlop();
+        _getFlipFlopToFlipFlop();
+        _getFlipFlopToOutput();
+    }; //End of getTimingPaths
+
     this.analyze = function () {
+        var Analyser = this;
         _constructTimingGraph(function () {
             _calculateArrivalTime();
             _calculateRequiredTime();
             _calculateSlack();
             _calculateHoldViolation();
             _calculateSetupViolation();
+            Analyser.getTimingPaths();
         });
     };
 
