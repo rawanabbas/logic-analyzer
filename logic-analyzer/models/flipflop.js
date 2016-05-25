@@ -5,6 +5,7 @@ var Util = require('./utility');
 module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
 
     var _name;
+    var _type;
 
     var _clk;
 
@@ -110,6 +111,14 @@ module.exports = function (cell, clk, inputs, outputs, tcq, setup, hold) {
     } else {
         // TODO: Handle arguments passed one by one
     }
+
+    this.setType = function (type) {
+        _type = type;
+    }; //End of setType
+
+    this.getType = function () {
+        return _type;
+    }; //End of getType
 
     this.getInputs = function () {
         return _inputs;

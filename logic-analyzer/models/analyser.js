@@ -19,43 +19,56 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
     var _constraints = new Constraint(constraint);
     var _clock = new Clock(clk);
     var Analyser = this;
+    var _map = {};
+    var _holds = {};
+    var _setups = {};
+    this.cb = cb;
     var _netlist = new Netlist(netlist, constraint, capacitance, clk, function (err, graph) {
         if (err) {
             console.error(err);
-            cb(err);
+            Analyser.cb(err);
         } else {
             console.log('Netlist parsed!');
             _graph = graph;
-            Analyser.analyze();
-            cb(null, _graph);
+            var nodes = _graph.nodes();
+            for (var i = 0; i < nodes.length; i++) {
+                _map[nodes[i]] = [];
+                var children = _graph.successors(nodes[i])
+                for (var j = 0; j < children.length; j++) {
+                    _map[nodes[i]].push(children[j]);
+                } //End of for j
+            } //End of for i
+            Analyser.cb();
+            // Analyser.analyze(cb);
+            // cb(null, _graph);
         } // End of else
     }); // End of new Netlist
 
-    var _getCellDelay = function (node, cb) {
+    var _getCellDelay = function (node, callback) {
         if (node instanceof Gate || node instanceof FlipFlop) {
             _liberty.getCellDelay(node, node.getInputSlew(), node.getOutputCapacitance(), function (err, cell) {
                 if (err) {
-                    cb(err);
+                    callback(err);
                 } else {
                     if (node instanceof FlipFlop) {
                         _liberty.getCellSetupHold(node, node.getInputSlew(), node.getClockSlew(), function (err, ff) {
                             if (err) {
-                                cb(err);
+                                callback(err);
                             } else {
-                                cb(null, ff);
+                                callback(null, ff);
                             } //End of else
                         }); //End of getCellSetupHold
                     } else {
-                        cb(null, cell);
+                        callback(null, cell);
                     } //End of else
                 } //End of else
             }); //End of getCellDelay
         } else {
-            cb(null, node);
+            callback(null, node);
         } //End of else
     }; //End of _getCellDelay
 
-    var _constructTimingGraph = function (cb) {
+    var _constructTimingGraph = function (callback) {
         var nodes = _graph.nodes();
         console.log('_Constructing Timing Graph....');
         console.log(nodes);
@@ -78,7 +91,7 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
             } else {
                 next();
             } //End of else
-        }, cb); //End of async.each
+        }, callback); //End of async.each
     };//End of  _constructTimingGraph
 
     var _calculateArrivalTime = function () {
@@ -271,10 +284,6 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         } //End of for
     }; //End of _printSlack
 
-    var _printTimingPaths = function () {
-
-    };
-
     var _getFlipFlops = function () {
         var flipflops = [];
         var nodes = _graph.nodes();
@@ -288,41 +297,25 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
 
     var _calculateHoldViolation = function () {
         var flipflops = Util.clone(_getFlipFlops());
-        var holds = {};
         for (var i = 0; i < flipflops.length; i++) {
             if (flipflops[i].getAAT() < Math.abs(flipflops[i].getHoldTime().max)) {
-                holds[flipflops[i]] = flipflops[i].getAAT() - flipflops[i].getHoldTime().max;
+                _holds[flipflops[i].getInstanceName()] = flipflops[i].getAAT() - flipflops[i].getHoldTime().max;
             }
-            // var inEdges = _graph.inEdges(flipflops[i].getInstanceName());
-            // for (var j = 0; j < inEdges.length; j++) {
-            //     var cell = _graph.node(inEdges[j]["v"]);
-            //     if (cell instanceof Gate) {
-            //         if (cell.getAAT() < flipflops[i].getHoldTime().max) {
-            //             holds[flipflops[i]] = cell.getAAT() - flipflops[i].getHoldTime().max;
-            //         } //End of if
-            //     } else {
-            //         if (cell.aat < flipflops[i].getHoldTime().max) {
-            //             holds[flipflops[i].getInstanceName()] = cell.getAAT() - flipflops[i].getHoldTime().max;
-            //         } //End of if
-            //     } //End of if
-            // } //End of for j
         } //End of for
         console.log('HOLD VIOLATIONS');
-        console.log(holds);
-        return holds;
+        console.log(_holds);
     }; //End of _calculateHoldViolation
 
     var _calculateSetupViolation = function () {
         var cycle = _constraints.getClock();
         var flipflops = Util.clone(_getFlipFlops());
-        var setups = {};
         for (var i = 0; i < flipflops.length; i++) {
             if (flipflops[i].getAAT() > Math.abs(cycle - flipflops[i].getSlack())) {
-                setups[flipflops[i]] = cycle - flipflops[i].getSlack();
+                _setups[flipflops[i].getInstanceName()] = cycle - flipflops[i].getSlack();
             }
         } //End of for
         console.log('SETUP VIOLATIONS');
-        console.log(setups);
+        console.log(_setups);
     };
 
     var _getInputToFlipFlop = function () {
@@ -434,9 +427,45 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         } //End of for i
     }; //End of _printARAT
 
-    this.generateTimingReport = function () {
-
-    };
+    this.generateTimingReport = function (callback) {
+        var report = {};
+        var path = {};
+        var slacks = [];
+        var preorder = [];
+        var sources = _graph.sources();
+        for (var i = 0; i < sources.length; i++) {
+            preorder.push(sources[i]);
+            report[sources[i]] = [];
+            while (preorder.length) {
+                var node  = preorder.pop();
+                if (node instanceof Object) {
+                    report[sources[i]].push(node);
+                }
+                var children = _graph.successors(node.node || node);
+                for (var j = 0; j < children.length; j++) {
+                    preorder.push({node: children[j], parent: ((typeof node.node !== 'undefined') ? [].concat(node.node).concat(node.parent) : sources[i])});
+                } //End of for
+            } //End of while
+        } //End of for
+        for (var source in report) {
+            if (report.hasOwnProperty(source)) {
+                for (var i = 0; i < report[source].length; i++) {
+                    console.log(report[source][i]);
+                }
+            }
+        }
+        for (var source in report) {
+            if (report.hasOwnProperty(source)) {
+                path[source] = [];
+                for (var i = 0; i < report[source].length; i++) {
+                    if (_graph.sinks().indexOf(report[source][i].node) > -1) {
+                        path[source].push([].concat(report[source][i].node).concat(report[source][i].parent));
+                    } //End of if
+                } //End of for i
+            } //End of if
+        } //End of for
+        callback(path);
+    }; //End of generateTimingReport
 
     this.getTimingPaths = function () {
         _getInputToFlipFlop();
@@ -444,7 +473,7 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
         _getFlipFlopToOutput();
     }; //End of getTimingPaths
 
-    this.analyze = function () {
+    this.analyze = function (callback) {
         var Analyser = this;
         _constructTimingGraph(function () {
             _calculateArrivalTime();
@@ -452,7 +481,7 @@ module.exports = function (netlist, constraint, capacitance, clk, cb) {
             _calculateSlack();
             _calculateHoldViolation();
             _calculateSetupViolation();
-            Analyser.getTimingPaths();
+            callback(_graph, _setups, _holds);
         });
     };
 

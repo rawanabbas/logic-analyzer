@@ -200,12 +200,14 @@ module.exports = function (filename) {
                 }
                 if (cellJSON["is_ff"]) {
                     var flipflop = new FlipFlop(cellJSON);
+                    flipflop.setType(cellType);
                     cb(null, flipflop);
                 } else if (cellJSON["is_latch"]) {
                     cb(null, cellJSON);
                     //latch
                 } else {
                     var gate = new Gate(cellJSON);
+                    gate.setType(cellType);
                     cb(null, gate);
                 } //End of else
             } //End of else

@@ -3,7 +3,7 @@ var Util = require('./utility');
 module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
 
     var _name;
-
+    var _type;
     var _inputs = [];
     var _inputPorts = [];
 
@@ -86,6 +86,7 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
         } //End of for
     }; //End of _setInputOutputPorts
 
+
     if (cell != null) {
         var pins = cell["pins"];
         _setInputOutputPorts(pins);
@@ -96,6 +97,14 @@ module.exports = function (cell, inputs, outputs, size, tpd, tcd) {
     } else {
         // TODO: One by One assignment
     }
+
+    this.setType = function (type) {
+        _type = type;
+    }; //End of setType
+
+    this.getType = function () {
+        return _type;
+    }; //End of getType
 
     this.getInstanceName = function () {
         return _name;

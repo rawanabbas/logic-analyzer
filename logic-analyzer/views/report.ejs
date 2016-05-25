@@ -1,0 +1,115 @@
+<% include header.ejs %>
+<div class="jumbotron">
+    <div class="filter btn-group btn-group">
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#setup">Setup Violations</a>
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#hold">Hold Violations</a>
+    </div>
+    <div id="setup" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Setup Violations</h4>
+                </div>
+                <div class="modal-body">
+                    <table  class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Instance Name</th>
+                                <th>Violation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for (var key in setup) { %>
+                                <tr>
+                                    <td><%= key %></td>
+                                    <td><%= setup[key] %></td>
+                                </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    <div id="hold" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Hold Violations</h4>
+                </div>
+                <div class="modal-body">
+                    <table  class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Instance Name</th>
+                                <th>Violation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for (var key in hold) { %>
+                                <tr>
+                                    <td><%= key %></td>
+                                    <td><%= hold[key] %></td>
+                                </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <% for (var source in report) {%>
+            <% for (var i = 0; i < report[source].length; i++) { %>
+                <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                    <div class="panel panel-default">
+                        <div class="panel-heading" role="tab" id="headingOne">
+                            <h4 class="panel-title">
+                                <a href="#collapse<%=i%>" role="button" data-toggle="collapse" data-parent="#accordion" aria-expanded="true" aria-controls="collapse<%=i%>">Path <%= i %></a>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+                <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                    <div class="panel-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Node</th>
+                                    <th>Type</th>
+                                    <th>Actual Arrival Time</th>
+                                    <th>Required Arrival Time</th>
+                                    <th>Slack</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% for (var j = report[source][i].length - 1; j >= 0; j--) { %>
+                                    <tr>
+                                        <td><%= report[source][i][j] %></td>
+                                        <td><%= types[source][i][j] %></td>
+                                        <td><%= aat[source][i][j] || 0 %></td>
+                                        <td><%= rat[source][i][j] %></td>
+                                        <td><%= rat[source][i][j] - (aat[source][i][j] || 0)%></td>
+                                    </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <% } %>
+                    <% } %>
+                </div>
+                <% include footer.ejs %>
